@@ -88,7 +88,6 @@ def readVTKPolar(filename, cell='edges'):
     V.nx=int(slist[1])
     V.ny=int(slist[2])
     V.nz=int(slist[3])
-    # print("nx=%d, ny=%d, nz=%d"%(V.nx,V.ny,V.nz))
 
     s=fid.readline()    # POINTS NXNYNZ float
     slist=s.split()
@@ -159,7 +158,6 @@ def readVTKPolar(filename, cell='edges'):
 
     while 1:
         s=fid.readline() # SCALARS/VECTORS name data_type (ex: SCALARS imagedata unsigned_char)
-        #print repr(s)
         if len(s)<2:         # leave if end of file
             break
         slist=s.split()
@@ -219,7 +217,6 @@ class Parameters():
 
         if self.code=='idefix':
             self.n_file = len(glob.glob1(directory,"data.*.vtk"))
-            # self.h0 = self.iniconfig["Setup"]["h0"]
             if isPlanet:
                 if Path(directory).joinpath("planet0.dat").is_file():
                     with open('planet0.dat','r') as f1:
@@ -243,7 +240,6 @@ class Parameters():
 
         elif self.code=='pluto':
             self.n_file = len(glob.glob1(directory,"data.*.vtk"))
-            # self.h0 = 0.05
             if isPlanet:
                 self.qpl = np.array([self.iniconfig["Parameters"]["Mplanet"]/self.iniconfig["Parameters"]["Mstar"] for i in range(self.n_file)])
                 print_warn("Initial distance not defined in pluto.ini.\nBy default, dpl=1.0 for the computation of omegaP\n")
@@ -268,7 +264,6 @@ class Parameters():
             cfgfile = glob.glob1(directory,"*.cfg")[0]
 
             self.cfgconfig = ix.load(os.path.join(directory,cfgfile))
-            # self.h0 = self.iniconfig["ASPECTRATIO"]
             if isPlanet:
                 if Path(directory).joinpath("planet0.dat").is_file():
                     with open('planet0.dat','r') as f1:
@@ -288,14 +283,6 @@ class Parameters():
                     self.omegagrid = self.omegaplanet
                 else:
                     self.omegagrid = np.array([0.0 for i in range(self.n_file)])
-        # if isPlanet:
-        #     print("qpl:",self.qpl)
-        #     print("dpl:",self.dpl)
-        #     print("omegaplanet:",self.omegaplanet)
-        # if corotate:
-        #     print("vtk:",self.vtk)
-        #     print("omegagrid:",self.omegagrid)
-        # print("n_file:",self.n_file)
 
         if self.n_file==0:
             raise FileNotFoundError("No data files (e.g., 'data.*.vtk' or 'gasdens*.dat') are found.")
@@ -319,8 +306,6 @@ class AnalysisNonos():
             print('--------------------------------------')
             for keys in self.config:
                 print("config['%s'] = %s"%(keys,self.config[keys]))
-                # for subkeys in config[keys]:
-                #     print("config['%s']['%s'] = %s"%(keys,subkeys,config[keys][subkeys]))
             print('--------------------------------------')
             print('\n')
 
@@ -346,7 +331,6 @@ class InitParamNonos(AnalysisNonos,Parameters):
                 print("Possible fields: ", list_keys)
                 print('nR=%d, np=%d, nz=%d' % (domain.nx,domain.ny,domain.nz))
 
-            # self.n_file = len(glob.glob1(self.directory,"data.*.vtk"))
 
         elif self.code=='fargo3d':
             nfound_x = len(glob.glob1(self.directory,"domain_x.dat"))
@@ -369,11 +353,6 @@ class InitParamNonos(AnalysisNonos,Parameters):
             if info:
                 print("\nWORKS IN POLAR COORDINATES")
                 print('nR=%d, np=%d, nz=%d' % (len(domain_y)-1,len(domain_x)-1,len(domain_z)-1))
-
-        #     self.n_file = len(glob.glob1(self.directory,"gasdens*.dat")) - len(glob.glob1(self.directory,"gasdens*_*.dat"))
-        #
-        # if self.n_file==0:
-        #     raise FileNotFoundError("No data files (e.g., 'data.*.vtk' or 'gasdens*.dat') are found.")
 
 class Mesh(Parameters):
     """
@@ -418,7 +397,6 @@ class Mesh(Parameters):
 
             self.xedge = domain_y #X-Edge
             self.yedge = domain_x #Y-Edge
-            # self.zedge = np.pi/2-domain_z #Z-Edge #latitute
             self.zedge = domain_z #Z-Edge #latitute
 
             self.nx=len(self.xedge)-1
@@ -590,7 +568,6 @@ class PlotNonos(FieldNonos):
         ax.yaxis.set_visible(True)
         ax.set_xlabel('Radius', fontsize=fontsize)
         ax.set_ylabel(self.title, fontsize=fontsize)
-        # plt.legend(frameon=False)
 
     def plot(self, ax, vmin=None, vmax=None, midplane=None, cartesian=None, average=None, fontsize=None, cmap=None, **karg):
         """
@@ -659,8 +636,6 @@ class PlotNonos(FieldNonos):
                     ax.plot(R,P,c='k',linewidth=0.07)
                     ax.plot(R.transpose(),P.transpose(),c='k',linewidth=0.07)
 
-            # ax.set_xlim(0.5,1.5)
-            # ax.set_ylim(-0.8,0.8)
             ax.set_title(self.code, family='monospace', fontsize=fontsize)
             ax.tick_params('both', labelsize=fontsize)
             ax.xaxis.set_minor_locator(AutoMinorLocator(5))
@@ -693,15 +668,10 @@ class PlotNonos(FieldNonos):
                 ax.yaxis.set_visible(True)
                 ax.set_ylabel('Z [c.u.]', family='monospace', fontsize=fontsize)
                 ax.set_xlabel('X [c.u.]', family='monospace', fontsize=fontsize)
-                # ax.set_xlim(-6.0,6.0)
-                # ax.set_ylim(-6.0,6.0)
                 if self.config['grid']:
-                    # im=ax.scatter(X,Y,c=np.mean(self.data,axis=2))
                     ax.plot(R,Z,c='k',linewidth=0.07)
                     ax.plot(R.transpose(),Z.transpose(),c='k',linewidth=0.07)
 
-                # ax.set_xlim(0.5,1.5)
-                # ax.set_ylim(-0.8,0.8)
                 ax.set_title(self.code, family='monospace', fontsize=fontsize)
                 ax.tick_params('both', labelsize=fontsize)
                 ax.xaxis.set_minor_locator(AutoMinorLocator(5))
@@ -727,8 +697,6 @@ class PlotNonos(FieldNonos):
                 print_warn("Aspect ratio not defined for now.\nBy default, h0=0.05\n")
                 tmin = np.pi/2-5*0.05
                 tmax = np.pi/2+5*0.05
-                # tmin = np.arctan2(1.0,Z.min())
-                # tmax = np.arctan2(1.0,Z.max())
 
                 """
                 if polar plot in the (R,z) plane, use rather
@@ -746,22 +714,17 @@ class PlotNonos(FieldNonos):
                 ax.yaxis.set_visible(True)
                 ax.set_ylabel('Theta', family='monospace', fontsize=fontsize)
                 ax.set_xlabel('Radius', family='monospace', fontsize=fontsize)
-                # ax.set_xlim(-6.0,6.0)
-                # ax.set_ylim(-6.0,6.0)
                 if self.config['grid']:
-                    # im=ax.scatter(X,Y,c=np.mean(self.data,axis=2))
                     ax.plot(r,t,c='k',linewidth=0.07)
                     ax.plot(r.transpose(),t.transpose(),c='k',linewidth=0.07)
 
-                # ax.set_xlim(0.5,1.5)
-                # ax.set_ylim(-0.8,0.8)
                 ax.set_title(self.code, family='monospace', fontsize=fontsize)
                 ax.tick_params('both', labelsize=fontsize)
                 ax.xaxis.set_minor_locator(AutoMinorLocator(5))
                 ax.yaxis.set_minor_locator(AutoMinorLocator(5))
                 ax.xaxis.set_ticks_position('both')
                 ax.yaxis.set_ticks_position('both')
-                cbar=plt.colorbar(im, orientation='vertical')#, format='%.0e')
+                cbar=plt.colorbar(im, orientation='vertical')
                 cbar.ax.tick_params(labelsize=fontsize)
                 cbar.set_label(self.title, family='monospace', fontsize=fontsize)
 
@@ -815,8 +778,6 @@ class StreamNonos(FieldNonos):
         """
 
         i = find_nearest(self.x,x)
-        # i = int(np.log10(x/self.x.min())/np.log10(self.x.max()/self.x.min())*self.nx)
-        # i = int((x-self.x.min())/(self.x.max()-self.x.min())*self.nx)
         j = int((y-self.y.min())/(self.y.max()-self.y.min())*self.ny)
 
         if i<0 or j<0 or i>v.shape[0]-2 or j>v.shape[1]-2:
@@ -920,8 +881,6 @@ class StreamNonos(FieldNonos):
         for i in range(nmax):
             ds = self.euler(vx, vy, x0, y0, reverse=reverse)
             if ds[0] is None:
-                # if(len(x)==1):
-                #     print_warn("There was an error getting the stream, ds is NULL (see get_stream).")
                 break
             l += np.sqrt(ds[0]**2+ds[1]**2)
             dx = ds[0]
@@ -930,7 +889,6 @@ class StreamNonos(FieldNonos):
                 print_warn("(get_stream): ds is very small, check if you're in a stagnation point.\nTry selecting another initial point.")
                 break
             if l > maxlength:
-                # print("maxlength reached: ", l)
                 break
             x0 += dx
             y0 += dy
@@ -950,7 +908,6 @@ class StreamNonos(FieldNonos):
             ymax = self.y.max()
 
         X = xmin + np.random.rand(n)*(xmax-xmin)
-        # X = xmin*pow((xmax/xmin),np.random.rand(n))
         Y = ymin + np.random.rand(n)*(ymax-ymin)
 
         streams = []
@@ -972,7 +929,6 @@ class StreamNonos(FieldNonos):
             ymax = self.y.max()
 
         X = xmin + np.linspace(0,1,n)*(xmax-xmin)
-        # X = xmin*pow((xmax/xmin),np.random.rand(n))
         Y = ymin + np.linspace(0,1,n)*(ymax-ymin)
 
         streams = []
@@ -986,7 +942,6 @@ class StreamNonos(FieldNonos):
     def plot_streams(self, ax, streams, midplane=True, cartesian=True, **kargs):
         for stream in streams:
             for sub_stream in stream:
-                # sub_stream[0]*=unit_code.length/unit.AU
                 if midplane:
                     if cartesian:
                         ax.plot(sub_stream[0]*np.cos(sub_stream[1]),sub_stream[0]*np.sin(sub_stream[1]),**kargs)
@@ -1056,7 +1011,6 @@ def print_err(message):
     rprint(f"[bold white on red]Error |[/] {message}", file=sys.stderr)
 
 # process function for parallisation purpose with progress bar
-# counterParallel = Value('i', 0) # initialization of a counter
 def process_field(on, profile, field, mid, cart, avr, diff, log, corotate, streamlines, stype, srmin, srmax, nstream, config, vmin, vmax, ft, cmap, isPlanet, pbar, parallel, directory):
     ploton=PlotNonos(config, field=field, on=on, diff=diff, log=log, corotate=corotate, isPlanet=isPlanet, directory=directory, check=False)
     try:
@@ -1111,15 +1065,6 @@ def process_field(on, profile, field, mid, cart, avr, diff, log, corotate, strea
 
     plt.close()
 
-    # if pbar:
-    #     if parallel:
-    #         global counterParallel
-    #         printProgressBar(counterParallel.value, len(config['onarray'])-1, prefix = 'Progress:', suffix = 'Complete', length = 50) # progress bar when parallelization is included
-    #         with counterParallel.get_lock():
-    #             counterParallel.value += 1  # incrementation of the counter
-    #     else:
-    #         printProgressBar(on-config['onarray'][0], len(config['onarray'])-1, prefix = 'Progress:', suffix = 'Complete', length = 50)
-
 def main(argv: Optional[List[str]] = None, show=True) -> int:
     # read the .toml file
     try:
@@ -1131,7 +1076,6 @@ def main(argv: Optional[List[str]] = None, show=True) -> int:
     pconfig=analysis.config
 
     parser = argparse.ArgumentParser()
-    # analysis = AnalysisNonos(directory=args.dir)
     parser.add_argument(
         '-info',
         action="store_true",
@@ -1401,7 +1345,6 @@ def main(argv: Optional[List[str]] = None, show=True) -> int:
         else:
             fig, ax=plt.subplots(figsize=(9,8))#, sharex=True, sharey=True)
         plt.ioff()
-        # print("on = ", args.on)
         # loading the field
 
         try:
@@ -1477,16 +1420,6 @@ def main(argv: Optional[List[str]] = None, show=True) -> int:
                 if args.vmax is None:
                     args.vmax=(np.mean(np.mean(fieldon.data,axis=1),axis=1)).max()
 
-        # call of the process_field function, whether it be in parallel or not
-        # if args.pbar:
-        #     printProgressBar(0, len(pconfig['onarray'])-1, prefix = 'Progress:', suffix = 'Complete', length = 50) # progress bar when parallelization is included
-        # if args.multi:
-        #     # determines the minimum between nbcpu and the nb max of cpus in the user's system
-        #     nbcpuReal = min((int(args.cpu),os.cpu_count()))
-        #     pool = Pool(nbcpuReal)   # Create a multiprocessing Pool with a security on the number of cpus
-        #     pool.map(functools.partial(process_field, profile=args.p, field=args.f, mid=args.mid, cart=args.cart, avr=args.avr, diff=args.diff, log=args.log, corotate=args.cor, streamlines=args.s, stype=args.stype, srmin=args.srmin, srmax=args.srmax, nstream=args.sn, config=pconfig, vmin=args.vmin, vmax=args.vmax, ft=args.ft, cmap=args.cmap, isPlanet=args.isp, pbar=args.pbar, parallel=args.multi, directory=diran), pconfig['onarray'])
-        #     tpara=time.time()-start
-        #     print("time in parallel : %f" %tpara)
         start=time.time()
         if args.multi:
             # determines the minimum between nbcpu and the nb max of cpus in the user's system
