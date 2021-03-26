@@ -319,7 +319,13 @@ class InitParamNonos(AnalysisNonos,Parameters):
         if directory is None:
             directory=self.config['dir']
         self.directory=directory
-        Parameters.__init__(self, config=self.config, directory=self.directory, paramfile=paramfile, corotate=corotate, isPlanet=isPlanet) #All the Parameters attributes inside Field
+        if corotate is None:
+            corotate=self.config['corotate']
+        self.corotate=corotate
+        if isPlanet is None:
+            isPlanet=self.config['isPlanet']
+        self.isPlanet=isPlanet
+        Parameters.__init__(self, config=self.config, directory=self.directory, paramfile=paramfile, corotate=self.corotate, isPlanet=self.isPlanet) #All the Parameters attributes inside Field
         if info:
             print(self.code.upper(), "analysis")
 
@@ -330,7 +336,6 @@ class InitParamNonos(AnalysisNonos,Parameters):
                 print("\nWORKS IN POLAR COORDINATES")
                 print("Possible fields: ", list_keys)
                 print('nR=%d, np=%d, nz=%d' % (domain.nx,domain.ny,domain.nz))
-
 
         elif self.code=='fargo3d':
             nfound_x = len(glob.glob1(self.directory,"domain_x.dat"))
@@ -360,7 +365,7 @@ class Mesh(Parameters):
     Mesh class, for keeping all the mesh data.
     Input: directory [string] -> this is where the domain files are.
     """
-    def __init__(self, config, directory="", paramfile=None):
+    def __init__(self, config, directory=None, paramfile=None):
         Parameters.__init__(self, config=config, directory=directory, paramfile=paramfile) #All the Parameters attributes inside Field
         if (self.code=='idefix' or self.code=='pluto'):
             domain=readVTKPolar(os.path.join(directory,'data.0000.vtk'), cell="edges")
@@ -429,29 +434,31 @@ class FieldNonos(Mesh,Parameters):
     Input: field [string] -> filename of the field
            directory='' [string] -> where filename is
     """
-    def __init__(self, config, directory="", field=None, on=None, paramfile=None, diff=None, log=None, corotate=None, isPlanet=None, check=True):
+    def __init__(self, init, directory=None, field=None, on=None, paramfile=None, diff=None, log=None, corotate=None, isPlanet=None, check=True):
         self.check=check
-        self.config = config
-        Mesh.__init__(self, config=self.config, directory=directory, paramfile=paramfile)       #All the Mesh attributes inside Field
+        self.init=init
+        if directory is None:
+            directory=self.init.directory
         if corotate is None:
-            corotate=self.config['corotate']
-        self.corotate=corotate
+            corotate=self.init.corotate
         if isPlanet is None:
-            isPlanet=self.config['isPlanet']
-        self.isPlanet=isPlanet
-        Parameters.__init__(self, config=self.config, directory=directory, paramfile=paramfile, corotate=self.corotate, isPlanet=self.isPlanet) #All the Parameters attributes inside Field
+            isPlanet=self.init.isPlanet
+        Mesh.__init__(self, config=self.init.config, directory=directory, paramfile=paramfile)       #All the Mesh attributes inside Field
+        Parameters.__init__(self, config=self.init.config, directory=directory, paramfile=paramfile, corotate=corotate, isPlanet=isPlanet) #All the Parameters attributes inside Field
         if on is None:
-            on=self.config['onStart']
+            on=self.init.config['onStart']
         if field is None:
-            field=self.config['field']
+            field=self.init.config['field']
         if diff is None:
-            diff=self.config['diff']
+            diff=self.init.config['diff']
         if log is None:
-            log=self.config['log']
+            log=self.init.config['log']
 
+        self.isPlanet = isPlanet
+        self.corotate = corotate
         self.on = on
-        self.diff=diff
-        self.log=log
+        self.diff = diff
+        self.log = log
 
         self.field = field
         filedata = "data.%04d.vtk"%self.on
@@ -474,16 +481,16 @@ class FieldNonos(Mesh,Parameters):
             if(not(self.isPlanet) and self.corotate):
                 print_warn("We don't rotate the grid if there is no planet for now.\nomegagrid = 0.")
 
-        nfdat = len(glob.glob1(directory,filedata))
+        nfdat = len(glob.glob1(self.init.directory,filedata))
         if nfdat!=1:
-            raise FileNotFoundError(os.path.join(directory,filedata)+" not found")
-        self.data = self.__open_field(os.path.join(directory,filedata)) #The scalar data is here.
+            raise FileNotFoundError(os.path.join(self.init.directory,filedata)+" not found")
+        self.data = self.__open_field(os.path.join(self.init.directory,filedata)) #The scalar data is here.
 
         if self.diff:
-            nfdat0 = len(glob.glob1(directory,filedata0))
+            nfdat0 = len(glob.glob1(self.init.directory,filedata0))
             if nfdat0!=1:
-                raise FileNotFoundError(os.path.join(directory,filedata0)+" not found")
-            self.data0 = self.__open_field(os.path.join(directory,filedata0))
+                raise FileNotFoundError(os.path.join(self.init.directory,filedata0)+" not found")
+            self.data0 = self.__open_field(os.path.join(self.init.directory,filedata0))
 
         if self.log:
             if self.diff:
@@ -533,23 +540,23 @@ class PlotNonos(FieldNonos):
     """
     Plot class which uses Field to compute different graphs.
     """
-    def __init__(self, config, directory="", field=None, on=None, diff=None, log=None, corotate=None, isPlanet=None, check=True):
-        FieldNonos.__init__(self,config=config,field=field,on=on,directory=directory, diff=diff, log=log, corotate=corotate, isPlanet=isPlanet, check=check) #All the Parameters attributes inside Field
+    def __init__(self, init, directory="", field=None, on=None, diff=None, log=None, corotate=None, isPlanet=None, check=True):
+        FieldNonos.__init__(self,init=init,field=field,on=on,directory=directory, diff=diff, log=log, corotate=corotate, isPlanet=isPlanet, check=check) #All the Parameters attributes inside Field
 
     def axiplot(self, ax, vmin=None, vmax=None, fontsize=None, **karg):
         dataProfile=np.mean(np.mean(self.data,axis=1),axis=1)
         if vmin is None:
-            vmin=self.config['vmin']
+            vmin=self.init.config['vmin']
             if not self.diff:
                 vmin=dataProfile.min()
         if vmax is None:
-            vmax=self.config['vmax']
+            vmax=self.init.config['vmax']
             if not self.diff:
                 vmax=dataProfile.max()
         if fontsize is None:
-            fontsize=self.config['fontsize']
+            fontsize=self.init.config['fontsize']
 
-        if self.config['writeAxi']:
+        if self.init.config['writeAxi']:
             axifile=open("axi%s%04d.csv"%(self.field.lower(),self.on),'w')
             for i in range(len(self.xmed)):
                 axifile.write('%f,%f\n' %(self.xmed[i],dataProfile[i]))
@@ -574,23 +581,23 @@ class PlotNonos(FieldNonos):
         A layer for pcolormesh function.
         """
         if vmin is None:
-            vmin=self.config['vmin']
+            vmin=self.init.config['vmin']
             if not self.diff:
                 vmin=self.data.min()
         if vmax is None:
-            vmax=self.config['vmax']
+            vmax=self.init.config['vmax']
             if not self.diff:
                 vmax=self.data.max()
         if midplane is None:
-            midplane=self.config['midplane']
+            midplane=self.init.config['midplane']
         if cartesian is None:
-            cartesian=self.config['cartesian']
+            cartesian=self.init.config['cartesian']
         if average is None:
-            average=self.config['average']
+            average=self.init.config['average']
         if fontsize is None:
-            fontsize=self.config['fontsize']
+            fontsize=self.init.config['fontsize']
         if cmap is None:
-            cmap=self.config['cmap']
+            cmap=self.init.config['cmap']
 
         # (R,phi) plane
         if midplane:
@@ -614,12 +621,12 @@ class PlotNonos(FieldNonos):
                 ax.yaxis.set_visible(True)
                 ax.set_ylabel('Y [c.u.]', family='monospace', fontsize=fontsize)
                 ax.set_xlabel('X [c.u.]', family='monospace', fontsize=fontsize)
-                if self.config['grid']:
+                if self.init.config['grid']:
                     ax.plot(X,Y,c='k',linewidth=0.07)
                     ax.plot(X.transpose(),Y.transpose(),c='k',linewidth=0.07)
             else:
                 P,R = np.meshgrid(self.y,self.x)
-                if self.config['average']:
+                if self.init.config['average']:
                     im=ax.pcolormesh(R,P,np.mean(self.data,axis=2),
                               cmap=cmap,vmin=vmin,vmax=vmax,**karg)
                 else:
@@ -632,7 +639,7 @@ class PlotNonos(FieldNonos):
                 ax.yaxis.set_visible(True)
                 ax.set_ylabel('Phi', family='monospace', fontsize=fontsize)
                 ax.set_xlabel('Radius', family='monospace', fontsize=fontsize)
-                if self.config['grid']:
+                if self.init.config['grid']:
                     ax.plot(R,P,c='k',linewidth=0.07)
                     ax.plot(R.transpose(),P.transpose(),c='k',linewidth=0.07)
 
@@ -668,7 +675,7 @@ class PlotNonos(FieldNonos):
                 ax.yaxis.set_visible(True)
                 ax.set_ylabel('Z [c.u.]', family='monospace', fontsize=fontsize)
                 ax.set_xlabel('X [c.u.]', family='monospace', fontsize=fontsize)
-                if self.config['grid']:
+                if self.init.config['grid']:
                     ax.plot(R,Z,c='k',linewidth=0.07)
                     ax.plot(R.transpose(),Z.transpose(),c='k',linewidth=0.07)
 
@@ -687,7 +694,7 @@ class PlotNonos(FieldNonos):
                 Z,R = np.meshgrid(self.z,self.x)
                 r = np.sqrt(R**2+Z**2)
                 t = np.arctan2(R,Z)
-                if self.config['average']:
+                if self.init.config['average']:
                     im=ax.pcolormesh(t,r,np.mean(self.data,axis=1),
                               cmap=cmap,vmin=vmin,vmax=vmax,**karg)
                 else:
@@ -714,7 +721,7 @@ class PlotNonos(FieldNonos):
                 ax.yaxis.set_visible(True)
                 ax.set_ylabel('Theta', family='monospace', fontsize=fontsize)
                 ax.set_xlabel('Radius', family='monospace', fontsize=fontsize)
-                if self.config['grid']:
+                if self.init.config['grid']:
                     ax.plot(r,t,c='k',linewidth=0.07)
                     ax.plot(r.transpose(),t.transpose(),c='k',linewidth=0.07)
 
@@ -733,13 +740,13 @@ class StreamNonos(FieldNonos):
     Adapted from Pablo Benitez-Llambay
     Class which uses Field to compute streamlines.
     """
-    def __init__(self, config, directory="", field=None, on=None, check=True):
-        FieldNonos.__init__(self,config=config,field=field,on=on,directory=directory, check=check) #All the Parameters attributes inside Field
+    def __init__(self, init, directory="", field=None, on=None, check=True):
+        FieldNonos.__init__(self,init=init,field=field,on=on,directory=directory, check=check) #All the Parameters attributes inside Field
 
         if field is None:
-            field=self.config['field']
+            field=self.init.config['field']
         if on is None:
-            on=self.config['onStart']
+            on=self.init.config['onStart']
 
     def bilinear(self,x,y,f,p):
         """
@@ -1011,13 +1018,14 @@ def print_err(message):
     rprint(f"[bold white on red]Error |[/] {message}", file=sys.stderr)
 
 # process function for parallisation purpose with progress bar
-def process_field(on, profile, field, mid, cart, avr, diff, log, corotate, streamlines, stype, srmin, srmax, nstream, config, vmin, vmax, ft, cmap, isPlanet, pbar, parallel, directory):
-    ploton=PlotNonos(config, field=field, on=on, diff=diff, log=log, corotate=corotate, isPlanet=isPlanet, directory=directory, check=False)
+# counterParallel = Value('i', 0) # initialization of a counter
+def process_field(on, init, profile, field, mid, cart, avr, diff, log, corotate, streamlines, stype, srmin, srmax, nstream, vmin, vmax, ft, cmap, isPlanet, pbar, parallel, directory):
+    ploton=PlotNonos(init, field=field, on=on, diff=diff, log=log, corotate=corotate, isPlanet=isPlanet, directory=directory, check=False)
     try:
         if streamlines:
-            streamon=StreamNonos(config, field=field, on=on, directory=directory, check=False)
-            vx1on = FieldNonos(config, field='VX1', on=on, diff=False, log=False, corotate=corotate, isPlanet=isPlanet, directory=directory, check=False)
-            vx2on = FieldNonos(config, field='VX2', on=on, diff=False, log=False, corotate=corotate, isPlanet=isPlanet, directory=directory, check=False)
+            streamon=StreamNonos(init, field=field, on=on, directory=directory, check=False)
+            vx1on = FieldNonos(init, field='VX1', on=on, diff=False, log=False, corotate=corotate, isPlanet=isPlanet, directory=directory, check=False)
+            vx2on = FieldNonos(init, field='VX2', on=on, diff=False, log=False, corotate=corotate, isPlanet=isPlanet, directory=directory, check=False)
     except FileNotFoundError as exc:
         print_err(exc)
         return 1
@@ -1238,10 +1246,10 @@ def main(argv: Optional[List[str]] = None, show=True) -> int:
         help="default: pconfig['cmap']",
         )
     parser.add_argument(
-        '-full',
-        type=bool,
-        default=pconfig['fullfilm'],
-        help="default: pconfig['fullfilm']",
+        '-partial',
+        action="store_true",
+        default=False,
+        help="default: False",
         )
     parser.add_argument(
         '-pbar',
@@ -1274,7 +1282,6 @@ def main(argv: Optional[List[str]] = None, show=True) -> int:
         except (FileNotFoundError,RuntimeError,ValueError) as exc:
             print_err(exc)
             return 1
-        pconfig=init.config
         args.dir=init.config["dir"]
         args.mod=init.config["mode"]
         args.on=init.config["onStart"]
@@ -1304,7 +1311,7 @@ def main(argv: Optional[List[str]] = None, show=True) -> int:
         args.p=init.config["profile"]
         args.ft=init.config["fontsize"]
         args.cmap=init.config["cmap"]
-        args.full=init.config["fullfilm"]
+        args.partial=not init.config["fullfilm"]
         args.pbar=init.config["progressBar"]
         args.multi=init.config["parallel"]
         args.cpu=init.config["nbcpu"]
@@ -1348,11 +1355,11 @@ def main(argv: Optional[List[str]] = None, show=True) -> int:
         # loading the field
 
         try:
-            ploton = PlotNonos(pconfig, field=args.f, on=args.on, diff=args.diff, log=args.log, corotate=args.cor, isPlanet=args.isp, directory=diran, check=False)
+            ploton = PlotNonos(init, field=args.f, on=args.on, diff=args.diff, log=args.log, corotate=args.cor, isPlanet=args.isp, directory=diran, check=False)
             if args.s:
-                streamon=StreamNonos(pconfig, field=args.f, on=args.on, directory=diran, check=False)
-                vx1on = FieldNonos(pconfig, field='VX1', on=args.on, diff=False, log=False, corotate=args.cor, isPlanet=args.isp, directory=diran, check=False)
-                vx2on = FieldNonos(pconfig, field='VX2', on=args.on, diff=False, log=False, corotate=args.cor, isPlanet=args.isp, directory=diran, check=False)
+                streamon=StreamNonos(init, field=args.f, on=args.on, directory=diran, check=False)
+                vx1on = FieldNonos(init, field='VX1', on=args.on, diff=False, log=False, corotate=args.cor, isPlanet=args.isp, directory=diran, check=False)
+                vx2on = FieldNonos(init, field='VX2', on=args.on, diff=False, log=False, corotate=args.cor, isPlanet=args.isp, directory=diran, check=False)
         except FileNotFoundError as exc:
             print_err(exc)
             return 1
@@ -1391,21 +1398,21 @@ def main(argv: Optional[List[str]] = None, show=True) -> int:
     # mode for creating a movie of the temporal evolution of a given field
     elif args.mod=='film':
         # do we compute the full movie or a partial movie given by "on"
-        if args.full:
-            pconfig['onarray']=range(n_file)
+        if args.partial:
+            init.config['onarray']=np.arange(args.on,args.onend+1)
         else:
-            pconfig['onarray']=np.arange(args.on,args.onend+1)
+            init.config['onarray']=range(n_file)
 
         # calculation of the min/max
         if args.diff:
             if args.vmin is None:
-                args.vmin=pconfig['vmin']
+                args.vmin=init.config['vmin']
             if args.vmax is None:
-                args.vmax=pconfig['vmax']
+                args.vmax=init.config['vmax']
         # In that case we choose a file in the middle (len(onarray)//2) and compute the MIN/MAX
         else:
             try:
-                fieldon = FieldNonos(pconfig, field=args.f, on=pconfig['onarray'][len(pconfig['onarray'])//2], directory=diran, diff=False, check=False)
+                fieldon = FieldNonos(init, field=args.f, on=init.config['onarray'][len(init.config['onarray'])//2], directory=diran, diff=False, check=False)
             except FileNotFoundError as exc:
                 print_err(exc)
                 return 1
@@ -1426,17 +1433,17 @@ def main(argv: Optional[List[str]] = None, show=True) -> int:
             nbcpuReal = min((int(args.cpu),os.cpu_count()))
             if args.pbar:
                 with Pool(nbcpuReal) as pool:   # Create a multiprocessing Pool with a security on the number of cpus
-                    list(track(pool.imap(functools.partial(process_field, profile=args.p, field=args.f, mid=args.mid, cart=args.cart, avr=args.avr, diff=args.diff, log=args.log, corotate=args.cor, streamlines=args.s, stype=args.stype, srmin=args.srmin, srmax=args.srmax, nstream=args.sn, config=pconfig, vmin=args.vmin, vmax=args.vmax, ft=args.ft, cmap=args.cmap, isPlanet=args.isp, pbar=args.pbar, parallel=args.multi, directory=diran), pconfig['onarray']), total=len(pconfig['onarray'])))
+                    list(track(pool.imap(functools.partial(process_field, init=init, profile=args.p, field=args.f, mid=args.mid, cart=args.cart, avr=args.avr, diff=args.diff, log=args.log, corotate=args.cor, streamlines=args.s, stype=args.stype, srmin=args.srmin, srmax=args.srmax, nstream=args.sn, vmin=args.vmin, vmax=args.vmax, ft=args.ft, cmap=args.cmap, isPlanet=args.isp, pbar=args.pbar, parallel=args.multi, directory=diran), init.config['onarray']), total=len(init.config['onarray'])))
             else:
                 pool = Pool(nbcpuReal)   # Create a multiprocessing Pool with a security on the number of cpus
-                pool.map(functools.partial(process_field, profile=args.p, field=args.f, mid=args.mid, cart=args.cart, avr=args.avr, diff=args.diff, log=args.log, corotate=args.cor, streamlines=args.s, stype=args.stype, srmin=args.srmin, srmax=args.srmax, nstream=args.sn, config=pconfig, vmin=args.vmin, vmax=args.vmax, ft=args.ft, cmap=args.cmap, isPlanet=args.isp, pbar=args.pbar, parallel=args.multi, directory=diran), pconfig['onarray'])
+                pool.map(functools.partial(process_field, init=init, profile=args.p, field=args.f, mid=args.mid, cart=args.cart, avr=args.avr, diff=args.diff, log=args.log, corotate=args.cor, streamlines=args.s, stype=args.stype, srmin=args.srmin, srmax=args.srmax, nstream=args.sn, vmin=args.vmin, vmax=args.vmax, ft=args.ft, cmap=args.cmap, isPlanet=args.isp, pbar=args.pbar, parallel=args.multi, directory=diran), init.config['onarray'])
             tpara=time.time()-start
             print("time in parallel : %f" %tpara)
         else:
             if args.pbar:
-                list(map(functools.partial(process_field, profile=args.p, field=args.f, mid=args.mid, cart=args.cart, avr=args.avr, diff=args.diff, log=args.log, corotate=args.cor, streamlines=args.s, stype=args.stype, srmin=args.srmin, srmax=args.srmax, nstream=args.sn, config=pconfig, vmin=args.vmin, vmax=args.vmax, ft=args.ft, cmap=args.cmap, isPlanet=args.isp, pbar=args.pbar, parallel=args.multi, directory=diran), track(pconfig['onarray'])))
+                list(map(functools.partial(process_field, init=init, profile=args.p, field=args.f, mid=args.mid, cart=args.cart, avr=args.avr, diff=args.diff, log=args.log, corotate=args.cor, streamlines=args.s, stype=args.stype, srmin=args.srmin, srmax=args.srmax, nstream=args.sn, vmin=args.vmin, vmax=args.vmax, ft=args.ft, cmap=args.cmap, isPlanet=args.isp, pbar=args.pbar, parallel=args.multi, directory=diran), track(init.config['onarray'])))
             else:
-                list(map(functools.partial(process_field, profile=args.p, field=args.f, mid=args.mid, cart=args.cart, avr=args.avr, diff=args.diff, log=args.log, corotate=args.cor, streamlines=args.s, stype=args.stype, srmin=args.srmin, srmax=args.srmax, nstream=args.sn, config=pconfig, vmin=args.vmin, vmax=args.vmax, ft=args.ft, cmap=args.cmap, isPlanet=args.isp, pbar=args.pbar, parallel=args.multi, directory=diran), pconfig['onarray']))
+                list(map(functools.partial(process_field, init=init, profile=args.p, field=args.f, mid=args.mid, cart=args.cart, avr=args.avr, diff=args.diff, log=args.log, corotate=args.cor, streamlines=args.s, stype=args.stype, srmin=args.srmin, srmax=args.srmax, nstream=args.sn, vmin=args.vmin, vmax=args.vmax, ft=args.ft, cmap=args.cmap, isPlanet=args.isp, pbar=args.pbar, parallel=args.multi, directory=diran), init.config['onarray']))
             tserie=time.time()-start
             print("time in serie : %f" %tserie)
 
