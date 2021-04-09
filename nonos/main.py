@@ -186,7 +186,7 @@ def readVTKPolar(filename, cell='edges'):
 
     return V
 
-class Parameters():
+class Parameters:
     """
     Adapted from Pablo Benitez-Llambay
     Class for reading the simulation parameters.
@@ -294,7 +294,7 @@ class Parameters():
         if self.n_file==0:
             raise FileNotFoundError("No data files (e.g., 'data.*.vtk' or 'gasdens*.dat') are found.")
 
-class AnalysisNonos():
+class AnalysisNonos:
     """
     read the .toml file
     find parameters in config.toml (same directory as script)
@@ -313,7 +313,7 @@ class AnalysisNonos():
             print(toml.dumps(self.config))
             print('--------------------------------------')
 
-class InitParamNonos(AnalysisNonos,Parameters):
+class InitParamNonos:
     """
     Call the AnalysisNonos class to define the config dictionary
     and use it to call the Parameters class to initialize important parameters.
@@ -363,7 +363,7 @@ class InitParamNonos(AnalysisNonos,Parameters):
                 print("\nWORKS IN POLAR COORDINATES")
                 print('nR=%d, np=%d, nz=%d' % (len(domain_y)-1,len(domain_x)-1,len(domain_z)-1))
 
-class Mesh(Parameters):
+class Mesh:
     """
     Adapted from Pablo Benitez-Llambay
     Mesh class, for keeping all the mesh data.
@@ -431,7 +431,7 @@ class Mesh(Parameters):
         self.y = self.yedge
         self.z = self.zedge
 
-class FieldNonos(Mesh,Parameters):
+class FieldNonos:
     """
     Inspired by Pablo Benitez-Llambay
     Field class, it stores the mesh, parameters and scalar data
