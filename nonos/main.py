@@ -50,7 +50,6 @@ from nonos.parsing import parse_output_number_range, parse_vmin_vmax, is_set
 #        (average=True+corotate=True) & (average=True+corotate=False) should be identical
 # TODO: check how the class arguments (arg=None) are defined between different classes
 # TODO: test averaging procedure (to compare with theroetical surface density profiles)
-# TODO: think how to check is_averageSafe when average=True
 
 class DataStructure:
     """
@@ -962,44 +961,6 @@ class StreamNonos(FieldNonos):
         else:
             if self.check:
                 raise NotImplementedError("For now, we do not compute streamlines in the (R,z) plane")
-
-def is_averageSafe(sigma0,sigmaSlope,plot=False):
-    init = InitParamNonos() # initialize the major parameters
-    fieldon = FieldNonos(init, field='RHO', on=0) # fieldon object with the density field at on=0
-    datarz=np.mean(fieldon.data,axis=1) # azimuthally-averaged density field
-    error=(sigma0*pow(fieldon.xmed,-sigmaSlope)-np.mean(datarz, axis=1)*next(item for item in [fieldon.z.max()-fieldon.z.min(),1.0] if item!=0))/(sigma0*pow(fieldon.xmed,-sigmaSlope)) # comparison between Sigma(R) profile and integral of rho(R,z) between zmin and zmax
-    if any(100*abs(error)>3):
-        print("With a maximum of %.1f percents of error, the averaging procedure may not be safe.\nzmax/h is probably too small.\nUse rather average=False (-noaverage) or increase zmin/zmax."%np.max(100*abs(error)))
-    else:
-        print("Only %.1f percents of error maximum in the averaging procedure."%np.max(100*abs(error)))
-    if plot:
-        fig, ax = plt.subplots()
-        ax.plot(fieldon.xmed, np.mean(datarz, axis=1)*next(item for item in [fieldon.z.max()-fieldon.z.min(),1.0] if item!=0), label=r'$\int_{z_{min}}^{z_{max}} \rho(R,z)dz$ = (z$_{max}$-z$_{min}$)$\langle\rho\rangle_z$')
-        ax.plot(fieldon.xmed, sigma0*pow(fieldon.xmed,-sigmaSlope), label=r'$\Sigma_0$R$^{-\sigma}$')
-        # ax.plot(fieldon.xmed, np.mean(datarz, axis=1)*(fieldon.z.max()-fieldon.z.min()), label='integral of data using mean and zmin/zmax')
-        # ax.plot(fieldon.xmed, sigma0*pow(fieldon.xmed,-sigmaSlope), label='theoretical reference')
-        ax.xaxis.set_visible(True)
-        ax.yaxis.set_visible(True)
-        ax.set_ylabel(r'$\Sigma_0(R)$', family='monospace', fontsize=10)
-        ax.set_xlabel('Radius', family='monospace', fontsize=10)
-        ax.tick_params('both', labelsize=10)
-        ax.xaxis.set_minor_locator(AutoMinorLocator(5))
-        ax.yaxis.set_minor_locator(AutoMinorLocator(5))
-        ax.xaxis.set_ticks_position('both')
-        ax.yaxis.set_ticks_position('both')
-        ax.legend(frameon=False, prop={'size': 10, 'family': 'monospace'})
-        fig2, ax2 = plt.subplots()
-        ax2.plot(fieldon.xmed, abs(error)*100)
-        ax2.xaxis.set_visible(True)
-        ax2.yaxis.set_visible(True)
-        ax2.set_ylabel(r'Error (%)', family='monospace', fontsize=10)
-        ax2.set_xlabel('Radius', family='monospace', fontsize=10)
-        ax2.tick_params('both', labelsize=10)
-        ax2.xaxis.set_minor_locator(AutoMinorLocator(5))
-        ax2.yaxis.set_minor_locator(AutoMinorLocator(5))
-        ax2.xaxis.set_ticks_position('both')
-        ax2.yaxis.set_ticks_position('both')
-        plt.show()
 
 def find_nearest(array, value):
     array = np.asarray(array)
