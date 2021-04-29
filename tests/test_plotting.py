@@ -57,6 +57,14 @@ def test_plot_simple_corotation(simulation_dir, capsys):
     assert err.strip().replace("\n", " ").endswith("We don't rotate the grid if there is no planet for now. omegagrid = 0.")
     assert ret == 0
 
+def test_plot_memory(simulation_dir, capsys):
+    ret = main(["-memory", "-dir", str(simulation_dir)])
+
+    out, err = capsys.readouterr()
+    assert re.match(r"Operation took \d+.\d\ds\nCurrent memory usage is \d+.\d\dMB; Peak was \d+.\d\dMB", out)
+    assert err == ""
+    assert ret == 0
+
 def test_plot_planet_corotation(test_data_dir):
     from nonos import InitParamNonos, FieldNonos
     from nonos.main import find_nearest

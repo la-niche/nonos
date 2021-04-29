@@ -44,6 +44,7 @@ usage: nonos [-h] [-dir DATADIR] [-field {RHO,VX1,VX2,VX3}] [-vmin VMIN]
              [-geom {cartesian,polar} | -pol] [-dim {1,2}] [-ft FONTSIZE]
              [-cmap CMAP] [-fmt FORMAT] [-dpi DPI] [-input INPUT | -isolated]
              [-d | -version | -logo | -config]
+             [-memory]
 
 Analysis tool for idefix/pluto/fargo3d simulations (in polar coordinates).
 
@@ -104,6 +105,7 @@ CLI-only options:
   -version, --version   show raw version number and exit
   -logo                 show Nonos logo with version number, and exit.
   -config               show configuration and exit.
+  -memory               show current memory usage and memory peak.
 ```
 
 #### Using a configuration file

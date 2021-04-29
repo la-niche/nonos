@@ -1085,8 +1085,6 @@ def process_field(on, init, dim, field, mid, geometry, avr, diff, log, corotate,
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    # import tracemalloc
-    # tracemalloc.start()
 
     parser = argparse.ArgumentParser(prog='nonos',
                                      description=__doc__,
@@ -1283,8 +1281,23 @@ def main(argv: Optional[List[str]] = None) -> int:
         action="store_true",
         help="show configuration and exit."
     )
+    cli_debug_group = cli_only_group.add_mutually_exclusive_group()
+    cli_debug_group.add_argument(
+        '-memory',
+        action="store_true",
+        help="show current memory usage and memory peak."
+    )
 
     clargs = vars(parser.parse_args(argv))
+
+    if clargs.pop("memory"):
+	    memory_switch = True
+    else:        
+        memory_switch = False
+
+    if memory_switch:
+	    import tracemalloc
+	    tracemalloc.start()
 
     # special cases: destructively consume CLI-only arguments with dict.pop
     if clargs.pop("pol"):
@@ -1433,7 +1446,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         list(track(pool.imap(func, args['on']), description="Processing snapshots", total=len(args['on'])))
     if not show:
         print(f"Operation took {time.time() - tstart:.2f}s")
-    # current, peak = tracemalloc.get_traced_memory()
-    # print(f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB")
-    # tracemalloc.stop()
+    if memory_switch:
+        current, peak = tracemalloc.get_traced_memory()
+        print(f"Current memory usage is {(current / 10**6):.2f}MB; Peak was {(peak / 10**6):.2f}MB")
+        tracemalloc.stop()
     return 0
