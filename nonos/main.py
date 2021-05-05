@@ -428,20 +428,22 @@ class Mesh(InitParamNonos):
             self.imidplane = self.nz // 2
 
         elif self.code == "fargo3d":
-            nfound_x = len(glob.glob1(directory, "domain_x.dat"))
+            nfound_x = len(glob.glob1(self.config["datadir"], "domain_x.dat"))
             if nfound_x != 1:
                 raise FileNotFoundError("domain_x.dat not found.")
-            nfound_y = len(glob.glob1(directory, "domain_y.dat"))
+            nfound_y = len(glob.glob1(self.config["datadir"], "domain_y.dat"))
             if nfound_y != 1:
                 raise FileNotFoundError("domain_y.dat not found.")
-            nfound_z = len(glob.glob1(directory, "domain_z.dat"))
+            nfound_z = len(glob.glob1(self.config["datadir"], "domain_z.dat"))
             if nfound_z != 1:
                 raise FileNotFoundError("domain_z.dat not found.")
 
-            domain_x = np.loadtxt(os.path.join(directory, "domain_x.dat"))
+            domain_x = np.loadtxt(os.path.join(self.config["datadir"], "domain_x.dat"))
             # We avoid ghost cells
-            domain_y = np.loadtxt(os.path.join(directory, "domain_y.dat"))[3:-3]
-            domain_z = np.loadtxt(os.path.join(directory, "domain_z.dat"))
+            domain_y = np.loadtxt(os.path.join(self.config["datadir"], "domain_y.dat"))[
+                3:-3
+            ]
+            domain_z = np.loadtxt(os.path.join(self.config["datadir"], "domain_z.dat"))
             if domain_z.shape[0] > 6:
                 domain_z = domain_z[3:-3]
 
