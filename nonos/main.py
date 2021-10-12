@@ -159,9 +159,9 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
         )
 
     slist = s.split()  # DIMENSIONS....
-    V.nx = int(slist[1])
-    V.ny = int(slist[2])
-    V.nz = int(slist[3])
+    V.n1 = int(slist[1])
+    V.n2 = int(slist[2])
+    V.n3 = int(slist[3])
 
     if V.geometry == "cartesian":
         # CARTESIAN geometry
@@ -169,12 +169,12 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
         inipos = (
             fid.tell()
         )  # we store the file pointer position before computing points
-        logging.debug("loading the X-grid cells: %d" % V.nx)
+        logging.debug("loading the X-grid cells: %d" % V.n1)
         x = np.memmap(
-            fid, mode="r", dtype=dt, offset=inipos, shape=V.nx
+            fid, mode="r", dtype=dt, offset=inipos, shape=V.n1
         )  # some smart memory efficient way to store the array
         newpos = (
-            np.float32().nbytes * 1 * V.nx + inipos
+            np.float32().nbytes * 1 * V.n1 + inipos
         )  # we calculate the offset that we would expect normally with a np.fromfile
         fid.seek(newpos, os.SEEK_SET)  # we set the file pointer position to this offset
         s = fid.readline()  # Extra line feed added by idefix
@@ -183,12 +183,12 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
         inipos = (
             fid.tell()
         )  # we store the file pointer position before computing points
-        logging.debug("loading the Y-grid cells: %d" % V.ny)
+        logging.debug("loading the Y-grid cells: %d" % V.n2)
         y = np.memmap(
-            fid, mode="r", dtype=dt, offset=inipos, shape=V.ny
+            fid, mode="r", dtype=dt, offset=inipos, shape=V.n2
         )  # some smart memory efficient way to store the array
         newpos = (
-            np.float32().nbytes * 1 * V.ny + inipos
+            np.float32().nbytes * 1 * V.n2 + inipos
         )  # we calculate the offset that we would expect normally with a np.fromfile
         fid.seek(newpos, os.SEEK_SET)  # we set the file pointer position to this offset
         s = fid.readline()  # Extra line feed added by idefix
@@ -197,12 +197,12 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
         inipos = (
             fid.tell()
         )  # we store the file pointer position before computing points
-        logging.debug("loading the Z-grid cells: %d" % V.nz)
+        logging.debug("loading the Z-grid cells: %d" % V.n3)
         z = np.memmap(
-            fid, mode="r", dtype=dt, offset=inipos, shape=V.nz
+            fid, mode="r", dtype=dt, offset=inipos, shape=V.n3
         )  # some smart memory efficient way to store the array
         newpos = (
-            np.float32().nbytes * 1 * V.nz + inipos
+            np.float32().nbytes * 1 * V.n3 + inipos
         )  # we calculate the offset that we would expect normally with a np.fromfile
         fid.seek(newpos, os.SEEK_SET)  # we set the file pointer position to this offset
         s = fid.readline()  # Extra line feed added by idefix
@@ -216,50 +216,50 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
 
         if point_type == "CELL_DATA" or cell == "centers":
             # The file contains face coordinates, so we extrapolate to get the cell center coordinates.
-            if V.nx > 1:
-                V.nx = V.nx - 1
-                V.x = 0.5 * (x[1:] + x[:-1])
+            if V.n1 > 1:
+                V.n1 = V.n1 - 1
+                V.x1 = 0.5 * (x[1:] + x[:-1])
             else:
-                V.x = x
-            if V.ny > 1:
-                V.ny = V.ny - 1
-                V.y = 0.5 * (y[1:] + y[:-1])
+                V.x1 = x
+            if V.n2 > 1:
+                V.n2 = V.n2 - 1
+                V.x2 = 0.5 * (y[1:] + y[:-1])
             else:
-                V.y = y
-            if V.nz > 1:
-                V.nz = V.nz - 1
-                V.z = 0.5 * (z[1:] + z[:-1])
+                V.x2 = y
+            if V.n3 > 1:
+                V.n3 = V.n3 - 1
+                V.x3 = 0.5 * (z[1:] + z[:-1])
             else:
-                V.z = z
+                V.x3 = z
         elif point_type == "POINT_DATA" or cell == "edges":
-            V.x = x
-            V.y = y
-            V.z = z
-            if V.nx > 1:
-                V.nx = V.nx - 1
-                V.x = x
+            V.x1 = x
+            V.x2 = y
+            V.x3 = z
+            if V.n1 > 1:
+                V.n1 = V.n1 - 1
+                V.x1 = x
             else:
-                V.x = x
-            if V.ny > 1:
-                V.ny = V.ny - 1
-                V.y = y
+                V.x1 = x
+            if V.n2 > 1:
+                V.n2 = V.n2 - 1
+                V.x2 = y
             else:
-                V.y = y
-            if V.nz > 1:
-                V.nz = V.nz - 1
-                V.z = z
+                V.x2 = y
+            if V.n3 > 1:
+                V.n3 = V.n3 - 1
+                V.x3 = z
             else:
-                V.z = z
+                V.x3 = z
 
-        if V.nx * V.ny * V.nz != npoints:
+        if V.n1 * V.n2 * V.n3 != npoints:
             raise ValueError(
                 "In readVTK: Grid size (%d) incompatible with number of points (%d) in the data set"
-                % (V.nx * V.ny * V.nz, npoints)
+                % (V.n1 * V.n2 * V.n3, npoints)
             )
 
     else:
         # POLAR or SPHERICAL coordinates
-        if V.nz == 1:
+        if V.n3 == 1:
             is2d = 1
         else:
             is2d = 0
@@ -273,7 +273,7 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
         )  # we store the file pointer position before computing points
         # print(inipos)
         # points = np.fromfile(fid, dt, 3 * npoints)
-        logging.debug("loading the grid cells: (%d,%d,%d)." % (V.nx, V.ny, V.nz))
+        logging.debug("loading the grid cells: (%d,%d,%d)." % (V.n1, V.n2, V.n3))
         points = np.memmap(
             fid, mode="r", dtype=dt, offset=inipos, shape=3 * npoints
         )  # some smart memory efficient way to store the array
@@ -286,10 +286,10 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
         s = fid.readline()  # EXTRA LINE FEED
 
         # V.points=points
-        if V.nx * V.ny * V.nz != npoints:
+        if V.n1 * V.n2 * V.n3 != npoints:
             raise ValueError(
                 "In readVTK: Grid size (%d) incompatible with number of points (%d) in the data set"
-                % (V.nx * V.ny * V.nz, npoints)
+                % (V.n1 * V.n2 * V.n3, npoints)
             )
 
         # Reconstruct the polar coordinate system
@@ -297,9 +297,9 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
         y1d = points[1::3]
         z1d = points[2::3]
 
-        xcart = np.transpose(x1d.reshape(V.nz, V.ny, V.nx))
-        ycart = np.transpose(y1d.reshape(V.nz, V.ny, V.nx))
-        zcart = np.transpose(z1d.reshape(V.nz, V.ny, V.nx))
+        xcart = np.transpose(x1d.reshape(V.n3, V.n2, V.n1))
+        ycart = np.transpose(y1d.reshape(V.n3, V.n2, V.n1))
+        zcart = np.transpose(z1d.reshape(V.n3, V.n2, V.n1))
 
         # Reconstruct the polar coordinate system
         if V.geometry == "polar":
@@ -320,49 +320,49 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
             s = fid.readline()  # Line feed
 
             if cell == "edges":
-                if V.nx > 1:
-                    V.nx = V.nx - 1
-                    V.x = r
+                if V.n1 > 1:
+                    V.n1 = V.n1 - 1
+                    V.x1 = r
                 else:
-                    V.x = r
-                if V.ny > 1:
-                    V.ny = V.ny - 1
-                    V.y = theta
+                    V.x1 = r
+                if V.n2 > 1:
+                    V.n2 = V.n2 - 1
+                    V.x2 = theta
                 else:
-                    V.y = theta
-                if V.nz > 1:
-                    V.nz = V.nz - 1
-                    V.z = z
+                    V.x2 = theta
+                if V.n3 > 1:
+                    V.n3 = V.n3 - 1
+                    V.x3 = z
                 else:
-                    V.z = z
+                    V.x3 = z
 
             # Perform averaging on coordinate system to get cell centers
             # The file contains face coordinates, so we extrapolate to get the cell center coordinates.
             elif cell == "centers":
-                if V.nx > 1:
-                    V.nx = V.nx - 1
-                    V.x = 0.5 * (r[1:] + r[:-1])
+                if V.n1 > 1:
+                    V.n1 = V.n1 - 1
+                    V.x1 = 0.5 * (r[1:] + r[:-1])
                 else:
-                    V.x = r
-                if V.ny > 1:
-                    V.ny = V.ny - 1
-                    V.y = (0.5 * (theta[1:] + theta[:-1]) + np.pi) % (
+                    V.x1 = r
+                if V.n2 > 1:
+                    V.n2 = V.n2 - 1
+                    V.x2 = (0.5 * (theta[1:] + theta[:-1]) + np.pi) % (
                         2.0 * np.pi
                     ) - np.pi
                 else:
-                    V.y = theta
-                if V.nz > 1:
-                    V.nz = V.nz - 1
-                    V.z = 0.5 * (z[1:] + z[:-1])
+                    V.x2 = theta
+                if V.n3 > 1:
+                    V.n3 = V.n3 - 1
+                    V.x3 = 0.5 * (z[1:] + z[:-1])
                 else:
-                    V.z = z
+                    V.x3 = z
 
         # Reconstruct the spherical coordinate system
         if V.geometry == "spherical":
             if is2d:
                 r = np.sqrt(xcart[:, 0, 0] ** 2 + ycart[:, 0, 0] ** 2)
                 phi = np.unwrap(
-                    np.arctan2(zcart[0, V.ny // 2, :], xcart[0, V.ny // 2, :])
+                    np.arctan2(zcart[0, V.n2 // 2, :], xcart[0, V.n2 // 2, :])
                 )
                 theta = np.arccos(
                     ycart[0, :, 0] / np.sqrt(xcart[0, :, 0] ** 2 + ycart[0, :, 0] ** 2)
@@ -373,7 +373,7 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
                 )
                 phi = np.unwrap(
                     np.arctan2(
-                        ycart[V.nx // 2, V.ny // 2, :], xcart[V.nx // 2, V.ny // 2, :]
+                        ycart[V.n1 // 2, V.n2 // 2, :], xcart[V.n1 // 2, V.n2 // 2, :]
                     )
                 )
                 theta = np.arccos(
@@ -395,40 +395,40 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
             s = fid.readline()  # Line feed
 
             if cell == "edges":
-                if V.nx > 1:
-                    V.nx = V.nx - 1
-                    V.r = r
+                if V.n1 > 1:
+                    V.n1 = V.n1 - 1
+                    V.x1 = r
                 else:
-                    V.r = r
-                if V.ny > 1:
-                    V.ny = V.ny - 1
-                    V.theta = theta
+                    V.x1 = r
+                if V.n2 > 1:
+                    V.n2 = V.n2 - 1
+                    V.x2 = theta
                 else:
-                    V.theta = theta
-                if V.nz > 1:
-                    V.nz = V.nz - 1
-                    V.phi = phi
+                    V.x2 = theta
+                if V.n3 > 1:
+                    V.n3 = V.n3 - 1
+                    V.x3 = phi
                 else:
-                    V.phi = phi
+                    V.x3 = phi
 
             # Perform averaging on coordinate system to get cell centers
             # The file contains face coordinates, so we extrapolate to get the cell center coordinates.
             elif cell == "centers":
-                if V.nx > 1:
-                    V.nx = V.nx - 1
-                    V.r = 0.5 * (r[1:] + r[:-1])
+                if V.n1 > 1:
+                    V.n1 = V.n1 - 1
+                    V.x1 = 0.5 * (r[1:] + r[:-1])
                 else:
-                    V.r = r
-                if V.ny > 1:
-                    V.ny = V.ny - 1
-                    V.theta = 0.5 * (theta[1:] + theta[:-1])
+                    V.x1 = r
+                if V.n2 > 1:
+                    V.n2 = V.n2 - 1
+                    V.x2 = 0.5 * (theta[1:] + theta[:-1])
                 else:
-                    V.theta = theta
-                if V.nz > 1:
-                    V.nz = V.nz - 1
-                    V.phi = 0.5 * (phi[1:] + phi[:-1])
+                    V.x2 = theta
+                if V.n3 > 1:
+                    V.n3 = V.n3 - 1
+                    V.x3 = 0.5 * (phi[1:] + phi[:-1])
                 else:
-                    V.phi = phi
+                    V.x3 = phi
 
     if computedata:
         logging.debug("loading the data arrays:")
@@ -448,14 +448,14 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
                 inipos = (
                     fid.tell()
                 )  # we store the file pointer position before computing points
-                # array = np.fromfile(fid, dt, V.nx * V.ny * V.nz).reshape(V.nz, V.ny, V.nx)
+                # array = np.fromfile(fid, dt, V.n1 * V.n2 * V.n3).reshape(V.n3, V.n2, V.n1)
                 array = np.memmap(
-                    fid, mode="r", dtype=dt, offset=inipos, shape=V.nx * V.ny * V.nz
+                    fid, mode="r", dtype=dt, offset=inipos, shape=V.n1 * V.n2 * V.n3
                 ).reshape(
-                    V.nz, V.ny, V.nx
+                    V.n3, V.n2, V.n1
                 )  # some smart memory efficient way to store the array
                 newpos = (
-                    np.float32().nbytes * V.nx * V.ny * V.nz + inipos
+                    np.float32().nbytes * V.n1 * V.n2 * V.n3 + inipos
                 )  # we calculate the offset that we would expect normally with a np.fromfile
                 fid.seek(
                     newpos, os.SEEK_SET
@@ -467,19 +467,19 @@ def readVTK(filename, *, geometry="unknown", cell="edges", computedata=True):
                     fid.tell()
                 )  # we store the file pointer position before computing points
                 Q = np.memmap(
-                    fid, mode="r", dtype=dt, offset=inipos, shape=V.nx * V.ny * V.nz
+                    fid, mode="r", dtype=dt, offset=inipos, shape=V.n1 * V.n2 * V.n3
                 )  # some smart memory efficient way to store the array
-                # Q = np.fromfile(fid, dt, 3 * V.nx * V.ny * V.nz)
+                # Q = np.fromfile(fid, dt, 3 * V.n1 * V.n2 * V.n3)
                 newpos = (
-                    np.float32().nbytes * V.nx * V.ny * V.nz + inipos
+                    np.float32().nbytes * V.n1 * V.n2 * V.n3 + inipos
                 )  # we calculate the offset that we would expect normally with a np.fromfile
                 fid.seek(
                     newpos, os.SEEK_SET
                 )  # we set the file pointer position to this offset
 
-                V.data[varname + "_X"] = np.transpose(Q[::3].reshape(V.nz, V.ny, V.nx))
-                V.data[varname + "_Y"] = np.transpose(Q[1::3].reshape(V.nz, V.ny, V.nx))
-                V.data[varname + "_Z"] = np.transpose(Q[2::3].reshape(V.nz, V.ny, V.nx))
+                V.data[varname + "_X"] = np.transpose(Q[::3].reshape(V.n3, V.n2, V.n1))
+                V.data[varname + "_Y"] = np.transpose(Q[1::3].reshape(V.n3, V.n2, V.n1))
+                V.data[varname + "_Z"] = np.transpose(Q[2::3].reshape(V.n3, V.n2, V.n1))
 
             else:
                 raise ValueError(
@@ -726,9 +726,9 @@ class Mesh(InitParamNonos):
                     f"geometry flag '{self._native_geometry}' not implemented yet for readVTK"
                 )
 
-            self.nx = self.domain.nx
-            self.ny = self.domain.ny
-            self.nz = self.domain.nz
+            self.nx = self.domain.n1
+            self.ny = self.domain.n2
+            self.nz = self.domain.n3
 
             self.xedge = self.domain.x  # X-Edge
             self.yedge = self.domain.y - np.pi  # Y-Edge
