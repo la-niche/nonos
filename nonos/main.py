@@ -8,6 +8,7 @@ import argparse
 import functools
 import os
 import re
+import sys
 import time
 from collections import ChainMap
 from multiprocessing import Pool
@@ -17,7 +18,7 @@ import cblind as cb
 import matplotlib.pyplot as plt
 import numpy as np
 import pkg_resources
-import pytomlpp as toml
+import tomli_w
 from inifix.format import iniformat
 
 from nonos.__version__ import __version__
@@ -32,6 +33,11 @@ from nonos.parsing import (
     range_converter,
 )
 from nonos.styling import set_mpl_style
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 
 # process function for parallisation purpose with progress bar
@@ -396,10 +402,12 @@ def main(argv: Optional[List[str]] = None) -> int:
             print_err(f"Couldn't find requested input file '{ifile}'.")
             return 1
         print_warn(f"[bold white]Using parameters from '{ifile}'.")
-        config_file_args = toml.load(ifile)
+        with open(ifile, "rb") as bh:
+            config_file_args = tomllib.load(bh)
     elif os.path.isfile("nonos.toml"):
         print_warn("[bold white]Using parameters from 'nonos.toml'.")
-        config_file_args = toml.load("nonos.toml")
+        with open("nonos.toml", "rb") as bh:
+            config_file_args = tomllib.load(bh)
     else:
         config_file_args = {}
 
@@ -417,7 +425,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         for key in DEFAULTS:
             conf_repr[key] = args[key]
         print(f"# Generated with nonos {__version__}")
-        print(iniformat(toml.dumps(conf_repr)))
+        print(iniformat(tomli_w.dumps(conf_repr)))
         return 0
 
     try:

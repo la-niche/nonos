@@ -1,11 +1,15 @@
 import os
+import sys
 import textwrap
-
-import pytomlpp as toml
 
 from nonos import __version__
 from nonos.api import Parameters
 from nonos.main import main
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 
 def test_no_inifile(capsys, tmp_path):
@@ -26,7 +30,7 @@ def test_default_conf(capsys, tmp_path):
 
     # validate output is reusable
     (tmp_path / "idefix.ini").touch()
-    dictout = toml.loads(out)
+    dictout = tomllib.loads(out)
     Parameters(directory=dictout["datadir"])
 
 

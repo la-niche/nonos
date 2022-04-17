@@ -2,11 +2,15 @@ import os
 import sys
 
 import pytest
-import pytomlpp as toml
 
 from nonos.api import Parameters
 from nonos.config import DEFAULTS
 from nonos.main import main
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="does not run on windows")
@@ -37,7 +41,7 @@ def test_load_config_file(minimal_paramfile, capsys):
     assert ret == 0
     out, err = capsys.readouterr()
     assert "Using parameters from" in err
-    conf = toml.loads(out)
+    conf = tomllib.loads(out)
     assert conf["field"] == "VX1"
 
 
@@ -48,5 +52,5 @@ def test_isolated_mode(minimal_paramfile, capsys):
     assert ret == 0
     out, err = capsys.readouterr()
     assert err == ""
-    conf = toml.loads(out)
+    conf = tomllib.loads(out)
     assert conf["field"] == DEFAULTS["field"]
