@@ -65,6 +65,10 @@ class Plotable:
                 **kwargs,
                 **kw,
             )
+            ax.set(
+                xlim=(self.avalue.flat[0], self.avalue.flat[-1]),
+                ylim=(self.ovalue.flat[0], self.ovalue.flat[-1]),
+            )
 
             ax.set_xlabel(self.akey)
             ax.set_ylabel(self.okey)
