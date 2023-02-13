@@ -2,7 +2,7 @@ cblind==2.2.2
 inifix==3.0.0
 lick==0.2.0
 loguru==0.5.3
-matplotlib==3.5.0
+matplotlib==3.6.3
 numpy==1.18.5
 rich==10.13.0
 scipy==1.6.1
