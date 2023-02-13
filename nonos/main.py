@@ -113,7 +113,7 @@ def process_field(
         dsop_dict = dsop.coords.get_attributes
         default_plane = []
         for key, val in dsop_dict.items():
-            if type(val) != str and val.shape[0] > 2:
+            if isinstance(val, np.ndarray) and val.shape[0] > 2:
                 default_plane.append(key)
         # default_plane = ["x","y"]
         plane = default_plane

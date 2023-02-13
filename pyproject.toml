@@ -23,6 +23,7 @@ requires-python = ">=3.8"
 # keep in sync with requirements/minimal_dependencies.txt
 dependencies = [
     "cblind>=2.2.2",
+    "gpgi>=0.10.1",
     "inifix>=3.0.0",
     "lick>=0.2.0",
     "loguru>=0.5.3",

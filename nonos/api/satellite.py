@@ -23,7 +23,7 @@ def file_analysis(filename, *, inifile="", code="", directory="", norb=None):
         init.loadIniFile()
         if init.code == "idefix" and "analysis" in init.inifile["Output"].keys():
             analysis = init.inifile["Output"]["analysis"]
-            rpini = init.inifile["Planet"]["dpl"]
+            rpini = init.inifile["Planet"]["initialDistance"]
             Ntmean = round(norb * 2 * np.pi * pow(rpini, 1.5) / analysis)
             for i in range(1, len(columns) - 1):
                 columns[i] = uniform_filter1d(columns[i], Ntmean)
