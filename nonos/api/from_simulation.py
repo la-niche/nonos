@@ -172,19 +172,36 @@ class Parameters:
         else:
             raise RuntimeError("Unknown file format")
 
-    def loadSimuFile(self, on: int, *, geometry: str = "unknown", cell: str = "edges"):
+    def loadSimuFile(
+        self,
+        on: int,
+        *,
+        geometry: str = "unknown",
+        cell: str = "edges",
+        pattern=None,
+    ):
         codeReadFormat = CodeReadFormat()
         if self.code == "fargo3d":
             return codeReadFormat.fargo3dReadDat(
-                on, directory=self.directory, inifile=self.paramfile
+                on,
+                directory=self.directory,
+                inifile=self.paramfile,
+                pattern=pattern,
             )
         elif self.code == "fargo-adsg":
             return codeReadFormat.fargoAdsgReadDat(
-                on, directory=self.directory
+                on,
+                directory=self.directory,
+                pattern=pattern,
             )  # , inifile=self.paramfile)
         elif self.code in ("idefix", "pluto"):
-            dataVTK = os.path.join(self.directory, f"data.{on:04d}.vtk")
-            return codeReadFormat.idfxReadVTK(dataVTK, geometry=geometry, cell=cell)
+            return codeReadFormat.idfxReadVTK(
+                on,
+                directory=self.directory,
+                geometry=geometry,
+                cell=cell,
+                pattern=pattern,
+            )
         else:
             raise ValueError(f"For now, can't read files from {self.code} simulations.")
 
@@ -212,14 +229,29 @@ class DataStructure:
 
 class CodeReadFormat:
     def idfxReadVTK(
-        self, filename, *, geometry="unknown", cell="edges", computedata=True
+        self,
+        on,
+        *,
+        directory,
+        geometry="unknown",
+        cell="edges",
+        computedata=True,
+        pattern=None,
     ):
         """
         Adapted from Geoffroy Lesur
         Function that reads a vtk file in polar coordinates
+        pattern can be a lambda function like
+        lambda on:f"data.{on:04d}.vtk"
         """
-        nfound = len(glob.glob(filename))
-        if nfound != 1:
+
+        directory = os.fspath(directory)
+        if pattern is None:
+            filename = os.path.join(directory, f"data.{on:04d}.vtk")
+        else:
+            filename = pattern(on)
+
+        if not os.path.isfile(filename):
             raise FileNotFoundError("In idfxReadVTK: %s not found." % filename)
 
         fid = open(filename, "rb")
@@ -644,12 +676,27 @@ class CodeReadFormat:
 
         return V
 
-    def fargoAdsgReadDat(self, on, *, directory=""):
+    def fargoAdsgReadDat(
+        self,
+        on,
+        *,
+        directory="",
+        pattern=None,
+    ):
+        """
+        pattern is a string that can be "gas" (default) or dust
+        """
+
+        directory = Path(directory)
+
+        if pattern is None:
+            densfile = directory / f"gasdens{on}.dat"
+            vyfile = directory / f"gasvrad{on}.dat"
+            vxfile = directory / f"gasvtheta{on}.dat"
+        else:
+            raise NotImplementedError("reading dust files: pattern not implemented yet")
+
         V = DataStructure()
-        filebeg = "gas"
-        densfile = os.path.join(directory, f"{filebeg}dens{on}.dat")
-        vyfile = os.path.join(directory, f"{filebeg}vrad{on}.dat")
-        vxfile = os.path.join(directory, f"{filebeg}vtheta{on}.dat")
 
         V.geometry = "polar"
         V.data = {}
@@ -691,13 +738,33 @@ class CodeReadFormat:
 
         return V
 
-    def fargo3dReadDat(self, on, *, directory="", inifile=""):
+    def fargo3dReadDat(
+        self,
+        on,
+        *,
+        directory="",
+        inifile="",
+        pattern=None,
+    ):
+        """
+        pattern is a string which gives
+        the name of the dust fluid (default: gas) in the filename
+        """
+
+        directory = Path(directory)
+
+        if pattern is None:
+            densfile = directory / f"gasdens{on}.dat"
+            vyfile = directory / f"gasvy{on}.dat"
+            vxfile = directory / f"gasvx{on}.dat"
+            vzfile = directory / f"gasvz{on}.dat"
+        else:
+            densfile = directory / f"{pattern}dens{on}.dat"
+            vyfile = directory / f"{pattern}vy{on}.dat"
+            vxfile = directory / f"{pattern}vx{on}.dat"
+            vzfile = directory / f"{pattern}vz{on}.dat"
+
         V = DataStructure()
-        filebeg = "gas"
-        densfile = os.path.join(directory, f"{filebeg}dens{on}.dat")
-        vyfile = os.path.join(directory, f"{filebeg}vy{on}.dat")
-        vxfile = os.path.join(directory, f"{filebeg}vx{on}.dat")
-        vzfile = os.path.join(directory, f"{filebeg}vz{on}.dat")
 
         if inifile == "":
             params = Parameters(directory=directory, inifile=inifile, code="")

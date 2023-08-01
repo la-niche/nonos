@@ -1417,10 +1417,16 @@ class GasDataSet:
         code: str = "",
         geometry: str = "unknown",
         directory: str = "",
+        pattern=None,
     ):
         self.on = on
         self.params = Parameters(inifile=inifile, code=code, directory=directory)
-        self._read = self.params.loadSimuFile(self.on, geometry=geometry, cell="edges")
+        self._read = self.params.loadSimuFile(
+            self.on,
+            geometry=geometry,
+            cell="edges",
+            pattern=pattern,
+        )
         self.native_geometry = self._read.geometry
         self.dict = self._read.data
         self.coords = Coordinates(
