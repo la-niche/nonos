@@ -1464,7 +1464,7 @@ class GasDataSet:
             else:
                 for field in fields:
                     if (
-                        dirname == "/".join((directory, field))
+                        dirname == os.path.join((directory, field))
                         and f"_{operation}_{field.upper()}.{self.on:04d}.npy" in files
                     ):
                         headername = os.path.join(
