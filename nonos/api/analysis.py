@@ -1408,7 +1408,6 @@ class GasDataSet:
         dataset
     """
 
-    # def __init__(self, on:int, *, code:Optional[str]=None, directory:str=""):
     def __init__(
         self,
         on: int,
@@ -1444,6 +1443,68 @@ class GasDataSet:
                 code=code,
                 directory=directory,
             )
+
+    @classmethod
+    def from_npy(
+        cls,
+        on: int,
+        *,
+        operation: str,
+        directory=".",
+        inifile: str = "",
+        code: str = "",
+    ):
+        self = super().__new__(cls)
+        self.on = on
+        self.params = Parameters(inifile=inifile, code=code, directory=directory)
+        self.dict = {}
+        for dirname, dirs, files in os.walk(directory):
+            if dirname == directory:
+                fields = dirs
+            else:
+                for field in fields:
+                    if (
+                        dirname == "/".join((directory, field))
+                        and f"_{operation}_{field.upper()}.{self.on:04d}.npy" in files
+                    ):
+                        headername = os.path.join(
+                            directory, "header", f"header_{operation}.npy"
+                        )
+                        with open(headername, "rb") as file:
+                            dict_coords = np.load(file, allow_pickle=True).item()
+
+                        (
+                            self.native_geometry,
+                            coord0,
+                            coord1,
+                            coord2,
+                        ) = dict_coords.values()
+                        self.coords = Coordinates(
+                            self.native_geometry, coord0, coord1, coord2
+                        )
+
+                        fileout = os.path.join(
+                            dirname, f"_{operation}_{field.upper()}.{self.on:04d}.npy"
+                        )
+                        with open(fileout, "rb") as file:
+                            ret_data = np.load(file, allow_pickle=True)
+
+                        fieldupper = field.upper()
+
+                        self.dict[fieldupper] = GasField(
+                            fieldupper,
+                            ret_data,
+                            self.coords,
+                            self.native_geometry,
+                            self.on,
+                            operation=operation,
+                            directory=directory,
+                        )
+        if not self.dict:
+            raise FileNotFoundError(
+                f"Original output was not reduced, or file '_{operation}_*.{self.on:04d}.npy' not recognized. Try with classical GasDataSet."
+            )
+        return self
 
     def __getitem__(self, key):
         if key in self.dict:
