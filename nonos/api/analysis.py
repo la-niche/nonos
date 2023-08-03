@@ -1489,10 +1489,8 @@ class GasDataSet:
                         with open(fileout, "rb") as file:
                             ret_data = np.load(file, allow_pickle=True)
 
-                        fieldupper = field.upper()
-
-                        self.dict[fieldupper] = GasField(
-                            fieldupper,
+                        self.dict[field.upper()] = GasField(
+                            field.upper(),
                             ret_data,
                             self.coords,
                             self.native_geometry,
