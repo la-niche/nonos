@@ -1463,10 +1463,8 @@ class GasDataSet:
                 fields = dirs
             else:
                 for field in fields:
-                    if (
-                        dirname == os.path.join(directory, field)
-                        and f"_{operation}_{field.upper()}.{self.on:04d}.npy" in files
-                    ):
+                    npyname = f"_{operation}_{field.upper()}.{self.on:04d}.npy"
+                    if dirname == os.path.join(directory, field) and npyname in files:
                         headername = os.path.join(
                             directory, "header", f"header_{operation}.npy"
                         )
@@ -1483,9 +1481,7 @@ class GasDataSet:
                             self.native_geometry, coord0, coord1, coord2
                         )
 
-                        fileout = os.path.join(
-                            dirname, f"_{operation}_{field.upper()}.{self.on:04d}.npy"
-                        )
+                        fileout = os.path.join(dirname, npyname)
                         with open(fileout, "rb") as file:
                             ret_data = np.load(file, allow_pickle=True)
 
