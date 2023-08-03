@@ -1500,7 +1500,8 @@ class GasDataSet:
                         )
         if not self.dict:
             raise FileNotFoundError(
-                f"Original output was not reduced, or file '_{operation}_*.{self.on:04d}.npy' not recognized. Try with classical GasDataSet."
+                f"Original output was not reduced, or file '_{operation}_*.{self.on:04d}.npy'"
+                " not recognized. Try with classical GasDataSet."
             )
         return self
 
