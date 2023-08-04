@@ -90,7 +90,8 @@ def test_error_no_planet(test_data_dir, tmp_path):
         )
 
 
-def test_verbose_info(simulation_dir, capsys):
+def test_verbose_info(simulation_dir, capsys, tmp_path):
+    os.chdir(tmp_path)
     ret = main(["-v", "-dir", str(simulation_dir), "-geometry", "polar"])
 
     out, err = capsys.readouterr()
@@ -101,7 +102,8 @@ def test_verbose_info(simulation_dir, capsys):
 
 
 @pytest.mark.xfail(strict=True)
-def test_verbose_debug(simulation_dir, capsys):
+def test_verbose_debug(simulation_dir, capsys, tmp_path):
+    os.chdir(tmp_path)
     ret = main(["-vv", "-dir", str(simulation_dir), "-geometry", "polar"])
 
     out, err = capsys.readouterr()
@@ -193,7 +195,8 @@ def test_compute_from_data(test_data_dir):
     npt.assert_array_equal(rhovx2_from_data.data, rhovx2_compute.data)
 
 
-def test_pbar(simulation_dir, capsys):
+def test_pbar(simulation_dir, capsys, tmp_path):
+    os.chdir(tmp_path)
     ret = main(["-pbar", "-dir", str(simulation_dir), "-geometry", "polar"])
 
     out, err = capsys.readouterr()

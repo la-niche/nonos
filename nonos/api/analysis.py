@@ -1,8 +1,11 @@
 import glob
+import json
 import os
+import sys
 import warnings
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from shutil import copyfile
+from typing import Any, Dict, Optional, Tuple, overload
 
 import numpy as np
 from matplotlib.ticker import SymmetricalLogLocator
@@ -11,12 +14,22 @@ from nonos.api.from_simulation import Parameters
 from nonos.api.tools import find_around, find_nearest
 from nonos.logging import logger
 
+if sys.version_info >= (3, 9):
+    from collections.abc import ItemsView, KeysView, ValuesView
+else:
+    from typing import ItemsView, KeysView, ValuesView
+
 
 class Plotable:
-    def __init__(self, dict_plotable: dict):
+    def __init__(self, dict_plotable: dict) -> None:
         self.dict_plotable = dict_plotable
         self.data = self.dict_plotable[self.dict_plotable["field"]]
         self.dimension = len(self.data.shape)
+        if self.dimension > 2:
+            raise TypeError(
+                "Plotable doesn't support data with dimensionality>2, "
+                f"got {self.dimension}"
+            )
 
     def plot(
         self,
@@ -99,7 +112,7 @@ class Plotable:
                         cb_axis.set_minor_locator(locator)
             else:
                 return im
-        if self.dimension == 1:
+        elif self.dimension == 1:
             vmin = kwargs.pop("vmin") if "vmin" in kwargs else np.nanmin(data)
             vmax = kwargs.pop("vmax") if "vmax" in kwargs else np.nanmax(data)
             self.akey = self.dict_plotable["abscissa"]
@@ -117,6 +130,11 @@ class Plotable:
             ax.set_xlabel(self.akey)
             if title is not None:
                 ax.set_ylabel(title)
+        else:
+            raise TypeError(
+                "Plotable doesn't support data with dimensionality>2, "
+                f"got {self.dimension}"
+            )
         if filename is not None:
             fig.savefig(f"{filename}.{fmt}", bbox_inches="tight", dpi=dpi)
 
@@ -124,7 +142,9 @@ class Plotable:
 class Coordinates:
     """Coordinates class from x1, x2, x3"""
 
-    def __init__(self, geometry: str, x1: np.ndarray, x2: np.ndarray, x3: np.ndarray):
+    def __init__(
+        self, geometry: str, x1: np.ndarray, x2: np.ndarray, x3: np.ndarray
+    ) -> None:
         if x1.shape[0] == 1:
             x1 = np.array([x1[0], x1[0]])
         if x2.shape[0] == 1:
@@ -162,7 +182,7 @@ class Coordinates:
             self.zmed = 0.5 * (self.z[1:] + self.z[:-1])
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple[int, int, int]:
         """
         Returns
         =======
@@ -170,32 +190,36 @@ class Coordinates:
         """
         if self.geometry == "cartesian":
             return len(self.x), len(self.y), len(self.z)
-        if self.geometry == "spherical":
+        elif self.geometry == "spherical":
             return len(self.r), len(self.theta), len(self.phi)
-        if self.geometry == "polar":
+        elif self.geometry == "polar":
             return len(self.R), len(self.phi), len(self.z)
+        else:
+            raise RuntimeError(f"Unknown geometry {self.geometry!r}")
 
     @property
-    def get_attributes(self):
+    def get_attributes(self) -> Dict[str, Any]:
         if self.geometry == "cartesian":
             return {"geometry": self.geometry, "x": self.x, "y": self.y, "z": self.z}
-        if self.geometry == "spherical":
+        elif self.geometry == "spherical":
             return {
                 "geometry": self.geometry,
                 "r": self.r,
                 "theta": self.theta,
                 "phi": self.phi,
             }
-        if self.geometry == "polar":
+        elif self.geometry == "polar":
             return {
                 "geometry": self.geometry,
                 "R": self.R,
                 "phi": self.phi,
                 "z": self.z,
             }
+        else:
+            raise RuntimeError(f"Unknown geometry {self.geometry!r}")
 
     @property
-    def get_coords(self):
+    def get_coords(self) -> Dict[str, Any]:
         if self.geometry == "cartesian":
             return {
                 "x": self.x,
@@ -205,7 +229,7 @@ class Coordinates:
                 "ymed": self.ymed,
                 "zmed": self.zmed,
             }
-        if self.geometry == "spherical":
+        elif self.geometry == "spherical":
             return {
                 "r": self.r,
                 "theta": self.theta,
@@ -214,7 +238,7 @@ class Coordinates:
                 "thetamed": self.thetamed,
                 "phimed": self.phimed,
             }
-        if self.geometry == "polar":
+        elif self.geometry == "polar":
             return {
                 "R": self.R,
                 "phi": self.phi,
@@ -223,8 +247,10 @@ class Coordinates:
                 "phimed": self.phimed,
                 "zmed": self.zmed,
             }
+        else:
+            raise RuntimeError(f"Unknown geometry {self.geometry!r}")
 
-    def _meshgrid_reduction(self, *reducted):
+    def _meshgrid_reduction(self, *reducted) -> Dict:
         for i in reducted:
             if i not in self.cube:
                 raise KeyError(f"{i} not in {self.cube}")
@@ -233,7 +259,7 @@ class Coordinates:
             for coords in reducted:
                 dictcoords[coords] = vars(self)[coords]
             axis = list(set(reducted) ^ set(self.cube))
-            dictmesh = {}
+            dictmesh: Dict[str, Any] = {}
             # 2D map
             if len(axis) == 1:
                 dictmesh[reducted[0]], dictmesh[reducted[1]] = np.meshgrid(
@@ -257,14 +283,26 @@ class Coordinates:
     # on demande 'x','y' et la geometry est cartesian -> 'x','y'
     # on demande 'x','y' et la geometry est polaire -> 'R','phi'
     # on demande 'x','y' et la geometry est spherique -> 'r','phi'
-    def native_from_wanted(self, *wanted):
+    @overload
+    def native_from_wanted(
+        self, _wanted_x1: str, _wanted_x2: str, /
+    ) -> Tuple[Tuple[str, str], str]:
+        ...
+
+    @overload
+    def native_from_wanted(
+        self, _wanted_x1: str, _wanted_x2: None, /
+    ) -> Tuple[Tuple[str], str]:
+        ...
+
+    def native_from_wanted(self, _wanted_x1: str, _wanted_x2: Optional[str] = None, /):
         if self.geometry == "cartesian":
             conversion = {
                 "x": "x",
                 "y": "y",
                 "z": "z",
             }
-        if self.geometry == "polar":
+        elif self.geometry == "polar":
             conversion = {
                 "R": "R",
                 "phi": "phi",
@@ -274,7 +312,7 @@ class Coordinates:
                 "r": "R",
                 "theta": "z",
             }
-        if self.geometry == "spherical":
+        elif self.geometry == "spherical":
             conversion = {
                 "r": "r",
                 "theta": "theta",
@@ -284,8 +322,16 @@ class Coordinates:
                 "z": "theta",
                 "R": "r",
             }
+        else:
+            raise RuntimeError(f"Unknown geometry {self.geometry!r}")
+
+        wanted: Tuple[str, ...]
+        if _wanted_x2 is None:
+            wanted = (_wanted_x1,)
+        else:
+            wanted = (_wanted_x1, _wanted_x2)
         for i in wanted:
-            if i not in tuple(conversion.keys()):
+            if i not in conversion:
                 raise KeyError(f"{i} not in {tuple(conversion.keys())}")
         if set(wanted) & {"x", "y", "z"} == set(wanted):
             target_geometry = "cartesian"
@@ -295,11 +341,17 @@ class Coordinates:
             target_geometry = "spherical"
         else:
             raise ValueError(f"Unknown wanted plane: {wanted}.")
-        native = tuple(conversion[i] for i in wanted)
+
+        native: Tuple[str, ...]
+        if _wanted_x2 is None:
+            native = (conversion[_wanted_x1],)
+        else:
+            native = (conversion[_wanted_x1], conversion[_wanted_x2])
+
         return native, target_geometry
 
     # for 2D arrays
-    def target_from_native(self, target_geometry, coords):
+    def target_from_native(self, target_geometry, coords) -> Dict[str, np.ndarray]:
         if self.geometry == "polar":
             R, phi, z = (coords["R"], coords["phi"], coords["z"])
             if target_geometry == "cartesian":
@@ -351,7 +403,7 @@ class Coordinates:
         target_coords["ordered"] = coords["ordered"]
         return target_coords
 
-    def _meshgrid_conversion(self, *wanted):
+    def _meshgrid_conversion(self, *wanted) -> Dict:
         native_from_wanted = self.native_from_wanted(*wanted)
         native = native_from_wanted[0]
         target_geometry = native_from_wanted[1]
@@ -392,7 +444,7 @@ class GasField:
         code: str = "",
         directory="",
         rotate_grid: int = -1,
-    ):
+    ) -> None:
         self.field = field
         self.operation = operation
         self.native_geometry = ngeom
@@ -406,15 +458,20 @@ class GasField:
         self._rotate_grid = rotate_grid
 
     @property
-    def shape(self) -> Tuple[Any, ...]:
+    def shape(self) -> Tuple[int, int, int]:
         """
         Returns
         =======
         shape : tuple
         """
-        return tuple(i - 1 if i > 1 else i for i in self.coords.shape)
+        i, j, k = self.coords.shape
+        return (
+            i - 1 if i > 1 else i,
+            j - 1 if j > 1 else j,
+            k - 1 if k > 1 else k,
+        )
 
-    def map(self, *wanted, planet_corotation: Optional[int] = None):
+    def map(self, *wanted, planet_corotation: Optional[int] = None) -> Plotable:
         data_key = self.field
         # we count the number of 1 in the shape of the data, which gives the real dimension of the data,
         # i.e. the number of reductions already performed (0 -> 3D, 1 -> 2D, 2 -> 1D)
@@ -462,7 +519,7 @@ class GasField:
                 abscissa_key: abscissa_value,
                 data_key: datamoved[0],
             }
-        if dimension == 2:
+        elif dimension == 2:
             # meshgrid in polar coordinates P, R (if "R", "phi") or R, P (if "phi", "R")
             # idem for all combinations of R,phi,z
             meshgrid_conversion = self.coords._meshgrid_conversion(*wanted)
@@ -500,21 +557,12 @@ class GasField:
                         f"geometry flag '{self.native_geometry}' not implemented yet if planet_corotation"
                     )
                 self._rotate_grid = planet_corotation
-            ordered = meshgrid_conversion["ordered"]
-            # move the axis of reduction in the front in order to
-            # perform the operation 3D(i,j,1) -> 2D(i,j) in a general way,
-            # whatever the position of (i,j,1)
-            # for that we must be careful to change the order ("ordered") if the data is reversed
-            # in practice, this is tricky only if the "1" is in the middle:
-            # 3D(i,1,k) -> 2D(i,k) is not a direct triedre anymore, we need to do 2D(i,k).T = 2D(k,i)
-            position_of_3d_dimension = self.shape.index(1)
-            datamoved = np.moveaxis(self.data, position_of_3d_dimension, 0)
-            if position_of_3d_dimension == 1:
-                ordered = not ordered
-            if ordered:
-                data_value = datamoved[0].T
-            else:
-                data_value = datamoved[0]
+
+            data = self.data.squeeze()
+            if self.shape.index(1) != 1 or not meshgrid_conversion["ordered"]:
+                # make sure the output plane axes always form a *direct* triedre
+                # with the plane normal.
+                data = data.T
 
             dict_plotable = {
                 "abscissa": abscissa_key,
@@ -522,14 +570,19 @@ class GasField:
                 "field": data_key,
                 abscissa_key: abscissa_value,
                 ordinate_key: ordinate_value,
-                data_key: data_value,
+                data_key: data,
             }
+        else:
+            raise RuntimeError
+
+        assert dict_plotable[data_key].ndim == dimension
+
         return Plotable(dict_plotable)
 
-    def save(self, directory="", header_only=False):
+    def save(self, directory="", header_only=False) -> None:
         if not header_only:
             if not os.path.exists(os.path.join(directory, self.field.lower())):
-                os.mkdir(os.path.join(directory, self.field.lower()))
+                os.makedirs(os.path.join(directory, self.field.lower()))
             filename = os.path.join(
                 directory,
                 self.field.lower(),
@@ -547,20 +600,30 @@ class GasField:
             )
         )
         header_file = list(
-            glob.glob1(os.path.join(directory, "header"), f"header{self.operation}.npy")
+            glob.glob1(
+                os.path.join(directory, "header"), f"header{self.operation}.json"
+            )
         )
         if (len(group_of_files) > 0 and len(header_file) == 0) or header_only:
             if not os.path.exists(os.path.join(directory, "header")):
-                os.mkdir(os.path.join(directory, "header"))
+                os.makedirs(os.path.join(directory, "header"))
             headername = os.path.join(
-                directory, "header", f"header{self.operation}.npy"
+                directory, "header", f"header{self.operation}.json"
             )
             if Path(headername).is_file():
                 logger.info("{} already exists", headername)
             else:
                 dictsaved = self.coords.get_attributes
-                with open(headername, "wb") as file:
-                    np.save(file, dictsaved)
+                for key in dictsaved:
+                    if key != "geometry":
+                        dictsaved[key] = [float(_) for _ in dictsaved[key]]
+                with open(headername, "w") as file:
+                    json.dump(dictsaved, file, indent=2)
+
+        src = os.path.join(self.directory, self.inifile)
+        dest = os.path.join(directory, os.path.basename(self.inifile))
+        if dest != src:
+            copyfile(src, dest)
 
     def find_ir(self, distance=1.0):
         r1 = distance
@@ -776,7 +839,7 @@ class GasField:
     #         rotate_grid=self._rotate_grid,
     #     )
 
-    def vertical_projection(self, z=None):
+    def vertical_projection(self, z=None) -> "GasField":
         operation = self.operation + "_vertical_projection"
         imid = self.find_imid()
         if self.native_geometry == "cartesian":
@@ -826,7 +889,7 @@ class GasField:
             )
         return GasField(
             self.field,
-            np.float32(ret_data),
+            ret_data.astype("float32", copy=False),
             ret_coords,
             self.native_geometry,
             self.on,
@@ -837,7 +900,7 @@ class GasField:
             rotate_grid=self._rotate_grid,
         )
 
-    def vertical_at_midplane(self):
+    def vertical_at_midplane(self) -> "GasField":
         # self.field = r"%s$_{\rm mid}$" % self.field
         operation = self.operation + "_vertical_at_midplane"
         imid = self.find_imid()
@@ -883,7 +946,7 @@ class GasField:
             rotate_grid=self._rotate_grid,
         )
 
-    def latitudinal_at_theta(self, theta=None, name_operation=None):
+    def latitudinal_at_theta(self, theta=None, name_operation=None) -> "GasField":
         logger.info("latitudinal_at_theta TO BE TESTED")
         if theta is None:
             if self.native_geometry in ("cartesian", "polar", "spherical"):
@@ -964,7 +1027,7 @@ class GasField:
             rotate_grid=self._rotate_grid,
         )
 
-    def vertical_at_z(self, z=None, name_operation=None):
+    def vertical_at_z(self, z=None, name_operation=None) -> "GasField":
         logger.info("vertical_at_z TO BE TESTED")
         # self.field = r"%s$_{\rm mid}$" % self.field
         if z is None:
@@ -999,6 +1062,7 @@ class GasField:
             raise NotImplementedError(
                 "vertical at z in spherical coordinates not implemented yet."
             )
+        """
             data_at_z = np.zeros((self.shape[0], self.shape[2]), dtype=">f4")
             for i in range(self.shape[0]):
                 if np.sign(z) >= 0:
@@ -1042,6 +1106,7 @@ class GasField:
                 find_around(self.coords.theta, self.coords.thetamed[imid]),
                 self.coords.phi,
             )
+        """
         return GasField(
             self.field,
             ret_data,
@@ -1055,7 +1120,7 @@ class GasField:
             rotate_grid=self._rotate_grid,
         )
 
-    def azimuthal_at_phi(self, phi=None):
+    def azimuthal_at_phi(self, phi=None) -> "GasField":
         if phi is None:
             phi = 0.0
         # self.field = r"%s ($\phi_P$)" % self.field
@@ -1064,7 +1129,7 @@ class GasField:
         iphi = self.find_iphi(phi=phi)
         if self.native_geometry == "cartesian":
             raise NotImplementedError(
-                f"geometry flag '{self._native_geometry}' not implemented yet for azimuthal_at_phi"
+                f"geometry flag '{self.native_geometry}' not implemented yet for azimuthal_at_phi"
             )
         if self.native_geometry == "polar":
             ret_coords = Coordinates(
@@ -1095,7 +1160,7 @@ class GasField:
             rotate_grid=self._rotate_grid,
         )
 
-    def azimuthal_at_planet(self, planet_number: int = 0):
+    def azimuthal_at_planet(self, planet_number: int = 0) -> "GasField":
         operation = self.operation + "_azimuthal_at_planet"
         phip = self.find_phip(planet_number=planet_number)
         aziphip = self.azimuthal_at_phi(phi=phip)
@@ -1112,13 +1177,13 @@ class GasField:
             rotate_grid=self._rotate_grid,
         )
 
-    def azimuthal_average(self):
+    def azimuthal_average(self) -> "GasField":
         # self.field = r"$\langle$%s$\rangle$" % self.field
         operation = self.operation + "_azimuthal_average"
         iphi = self.find_iphi(phi=0)
         if self.native_geometry == "cartesian":
             raise NotImplementedError(
-                f"geometry flag '{self._native_geometry}' not implemented yet for azimuthal_average"
+                f"geometry flag '{self.native_geometry}' not implemented yet for azimuthal_average"
             )
         if self.native_geometry == "polar":
             ret_coords = Coordinates(
@@ -1142,7 +1207,7 @@ class GasField:
             )
         return GasField(
             self.field,
-            np.float32(ret_data),
+            ret_data.astype("float32", copy=False),
             ret_coords,
             self.native_geometry,
             self.on,
@@ -1153,7 +1218,7 @@ class GasField:
             rotate_grid=self._rotate_grid,
         )
 
-    def remove_planet_hill(self, planet_number: int = 0):
+    def remove_planet_hill(self, planet_number: int = 0) -> "GasField":
         # self.field = r"$\langle$%s$\rangle$" % self.field
         operation = self.operation + "_remove_planet_hill"
         phip = self.find_phip(planet_number=planet_number)
@@ -1257,14 +1322,14 @@ class GasField:
             rotate_grid=self._rotate_grid,
         )
 
-    def radial_average_interval(self, vmin=None, vmax=None):
+    def radial_average_interval(self, vmin=None, vmax=None) -> "GasField":
         operation = self.operation + f"_radial_average_interval_{vmin}_{vmax}"
         irmin = self.find_ir(distance=vmin)
         irmax = self.find_ir(distance=vmax)
         ir = self.find_ir(distance=(vmax - vmin) / 2)
         if self.native_geometry == "cartesian":
             raise NotImplementedError(
-                f"geometry flag '{self._native_geometry}' not implemented yet for radial_at_r"
+                f"geometry flag '{self.native_geometry}' not implemented yet for radial_at_r"
             )
         if self.native_geometry == "polar":
             if vmin is None:
@@ -1304,7 +1369,7 @@ class GasField:
             rotate_grid=self._rotate_grid,
         )
 
-    def diff(self, on_2):
+    def diff(self, on_2) -> "GasField":
         ds_2 = GasDataSet(
             on_2,
             geometry=self.native_geometry,
@@ -1333,7 +1398,7 @@ class GasField:
             rotate_grid=self._rotate_grid,
         )
 
-    def rotate(self, planet_corotation: Optional[int] = None):
+    def rotate(self, planet_corotation: Optional[int] = None) -> "GasField":
         operation = self.operation
         if self.shape.count(1) != 1:
             raise ValueError("data has to be 2D in order to rotate the data.")
@@ -1408,7 +1473,6 @@ class GasDataSet:
         dataset
     """
 
-    # def __init__(self, on:int, *, code:Optional[str]=None, directory:str=""):
     def __init__(
         self,
         on: int,
@@ -1418,7 +1482,7 @@ class GasDataSet:
         geometry: str = "unknown",
         directory: str = "",
         pattern=None,
-    ):
+    ) -> None:
         self.on = on
         self.params = Parameters(inifile=inifile, code=code, directory=directory)
         self._read = self.params.loadSimuFile(
@@ -1440,18 +1504,75 @@ class GasDataSet:
                 self.native_geometry,
                 self.on,
                 "",
-                inifile=inifile,
-                code=code,
+                inifile=self.params.paramfile,
+                code=self.params.code,
                 directory=directory,
             )
 
-    def __getitem__(self, key):
+    @classmethod
+    def from_npy(
+        cls,
+        on: int,
+        *,
+        operation: str,
+        directory=".",
+        inifile: str = "",
+        code: str = "",
+    ) -> "GasDataSet":
+        self = super().__new__(cls)
+        self.on = on
+        self.params = Parameters(inifile=inifile, code=code, directory=directory)
+        self.dict = {}
+        for dirname, dirs, files in os.walk(directory):
+            if dirname == str(directory):
+                fields = dirs
+                continue
+            for field in fields:
+                npyname = f"_{operation}_{field.upper()}.{self.on:04d}.npy"
+                if dirname != os.path.join(directory, field) or npyname not in files:
+                    continue
+                headername = os.path.join(
+                    directory, "header", f"header_{operation}.json"
+                )
+                with open(headername) as file:
+                    dict_coords = json.load(file)
+
+                for key in dict_coords:
+                    if key != "geometry":
+                        dict_coords[key] = np.array(dict_coords[key], dtype="float32")
+
+                self.coords = Coordinates(*dict_coords.values())
+                self.native_geometry = dict_coords["geometry"]
+
+                fileout = os.path.join(dirname, npyname)
+                with open(fileout, "rb") as file:
+                    ret_data = np.load(file)
+
+                self.dict[field.upper()] = GasField(
+                    field.upper(),
+                    ret_data,
+                    self.coords,
+                    self.native_geometry,
+                    self.on,
+                    operation=operation,
+                    directory=directory,
+                    inifile=self.params.paramfile,
+                    code=self.params.code,
+                )
+        if not self.dict:
+            raise FileNotFoundError(
+                f"Original output was not reduced, or file '_{operation}_*.{self.on:04d}.npy'"
+                " not recognized. Try with classical GasDataSet."
+            )
+        return self
+
+    def __getitem__(self, key) -> "GasField":
         if key in self.dict:
             return self.dict[key]
         else:
             raise KeyError
 
-    def keys(self):
+    def keys(self) -> KeysView[str]:
         """
         Returns
         =======
@@ -1459,7 +1580,7 @@ class GasDataSet:
         """
         return self.dict.keys()
 
-    def values(self):
+    def values(self) -> ValuesView["GasField"]:
         """
         Returns
         =======
@@ -1467,7 +1588,7 @@ class GasDataSet:
         """
         return self.dict.values()
 
-    def items(self):
+    def items(self) -> ItemsView[str, "GasField"]:
         """
         Returns
         =======
