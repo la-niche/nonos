@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import numpy as np
 import pytest
@@ -56,6 +57,15 @@ def test_roundtrip_other_dir(test_data_dir, tmp_path):
     dsnpy = GasDataSet.from_npy(500, operation="azimuthal_average", directory=tmp_path)
     assert dsnpy.nfields == 1
 
+
+def test_roundtrip_current_dir(test_data_dir):
+    os.chdir(test_data_dir / "idefix_spherical_planet3d")
+    gf = GasDataSet(500)["RHO"].azimuthal_average()
+    gf.save()
+    dsnpy = GasDataSet.from_npy(500, operation="azimuthal_average")
+    assert dsnpy.nfields == 1
+    shutil.rmtree("rho")
+    shutil.rmtree("header")
 
 @pytest.mark.parametrize(
     "from_abs_path",

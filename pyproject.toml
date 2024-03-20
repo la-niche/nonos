@@ -87,6 +87,7 @@ combine-as-imports = true
 filterwarnings = [
     "error",
     'ignore:datetime\.datetime\.utcfromtimestamp\(\) is deprecated:DeprecationWarning', # https://github.com/dateutil/dateutil/pull/1285
+    'ignore:The py23 module has been deprecated and will be removed in a future release:DeprecationWarning',
 ]
 
 [tool.mypy]
