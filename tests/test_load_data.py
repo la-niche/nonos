@@ -67,6 +67,7 @@ def test_roundtrip_current_dir(test_data_dir):
     shutil.rmtree("rho")
     shutil.rmtree("header")
 
+
 @pytest.mark.parametrize(
     "from_abs_path",
     [
