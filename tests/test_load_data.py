@@ -63,10 +63,10 @@ def test_save_current_dir(test_data_dir, tmp_path):
     shutil.copy("idefix.ini", tmp_path / "idefix.ini")
     shutil.copy("data.0500.vtk", tmp_path / "data.0500.vtk")
     os.chdir(tmp_path)
-    gf = GasDataSet(500)["RHO"].azimuthal_average()
+    time_inifile = os.path.getmtime("idefix.ini")
+    gf = GasDataSet(500)["RHO"]
     gf.save()
-    dsnpy = GasDataSet.from_npy(500, operation="azimuthal_average")
-    assert dsnpy.nfields == 1
+    assert os.path.getmtime("idefix.ini") == time_inifile
 
 
 @pytest.mark.parametrize(
