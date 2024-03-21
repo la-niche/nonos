@@ -58,14 +58,16 @@ def test_roundtrip_other_dir(test_data_dir, tmp_path):
     assert dsnpy.nfields == 1
 
 
-def test_roundtrip_current_dir(test_data_dir):
+def test_save_current_dir(test_data_dir, tmp_path):
     os.chdir(test_data_dir / "idefix_spherical_planet3d")
+    shutil.copy("idefix.ini", tmp_path / "idefix.ini")
+    shutil.copy("data.0500.vtk", tmp_path / "data.0500.vtk")
+    os.chdir(tmp_path)
     gf = GasDataSet(500)["RHO"].azimuthal_average()
     gf.save()
     dsnpy = GasDataSet.from_npy(500, operation="azimuthal_average")
     assert dsnpy.nfields == 1
-    shutil.rmtree("rho")
-    shutil.rmtree("header")
+
 
 @pytest.mark.parametrize(
     "from_abs_path",
