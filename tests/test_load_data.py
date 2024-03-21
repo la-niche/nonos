@@ -69,7 +69,6 @@ def test_save_current_dir(test_data_dir, tmp_path):
     assert dsnpy.nfields == 1
 
 
-
 @pytest.mark.parametrize(
     "from_abs_path",
     [
