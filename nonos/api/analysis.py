@@ -599,7 +599,7 @@ class GasField:
 
         return Plotable(dict_plotable)
 
-    def save(self, directory: Optional[str] = None, header_only=False) -> None:
+    def save(self, directory: Optional[str] = None, header_only: bool = False) -> None:
         if directory is None:
             directory = os.getcwd()
         operation = self.operation or "_"
