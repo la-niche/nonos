@@ -540,14 +540,18 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     logger.info("Starting main loop")
     tstart = time.time()
-    with Pool(ncpu) as pool:
-        list(
-            mytrack(
-                pool.imap(func, args["on"]),
-                description="Processing snapshots",
-                total=len(args["on"]),
+    if "NONOS_DEBUG" in os.environ:
+        for on in args["on"]:
+            func(on)
+    else:
+        with Pool(ncpu) as pool:
+            list(
+                mytrack(
+                    pool.imap(func, args["on"]),
+                    description="Processing snapshots",
+                    total=len(args["on"]),
+                )
             )
-        )
     if not show:
         logger.info("Operation took {:.2f}s", time.time() - tstart)
 
