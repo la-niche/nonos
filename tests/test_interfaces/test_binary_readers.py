@@ -68,6 +68,11 @@ class TestNPYReader:
         with open(rho_file, "wb") as fb:
             np.save(fb, fake_rho)
 
+        rho_file_rr = rho_dir.joinpath("radial_at_r1.3_RHO.0001.npy")
+        fake_rho_rr = rng.normal(0, 1, size=8).resize(2, 2, 2)
+        with open(rho_file_rr, "wb") as fb:
+            np.save(fb, fake_rho_rr)
+
         foo_dir = tmp_path / "foo"
         os.mkdir(foo_dir)
         foo_file = foo_dir.joinpath("__FOO.0456.npy")
@@ -84,7 +89,7 @@ class TestNPYReader:
 
         rho_dir.joinpath("trap4.npy").touch()
 
-        real_files = sorted([foo_file, rho_file, rho_file_2])
+        real_files = sorted([foo_file, rho_file, rho_file_rr, rho_file_2])
         return tmp_path, real_files
 
     def test_get_bin_files(self, initdir):

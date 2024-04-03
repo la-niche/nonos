@@ -645,7 +645,7 @@ class NPYReader(ReaderMixin):
 
     # we accept a leading '_' for backward compatibility
     _filename_re = re.compile(
-        r"^_?(?P<prefix>[\w]*((\d*\.)?\d+)?)"
+        r"^_?(?P<prefix>[\w\.]*)"
         r"_(?P<field_name>[A-Z]+)"
         r"\.(?P<output_number>\d+)"
         r"\.npy$"
