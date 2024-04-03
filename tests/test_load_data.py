@@ -94,7 +94,7 @@ def test_npy_radial_at_r(test_data_dir, tmp_path):
         operation="radial_at_r1.1",
         directory=tmp_path,
     )
-    assert dsnpy.nfields == 1
+    assert list(dsnpy.keys()) == ["RHO"]
 
 
 def test_save_current_dir(test_data_dir, tmp_path):
