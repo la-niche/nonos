@@ -85,6 +85,18 @@ def test_roundtrip_other_dir(test_data_dir, tmp_path):
     assert dsnpy.nfields == 1
 
 
+def test_npy_radial_at_r(test_data_dir, tmp_path):
+    os.chdir(test_data_dir / "idefix_spherical_planet3d")
+    gf = GasDataSet(500)["RHO"].radial_at_r(1.1)
+    gf.save(tmp_path)
+    dsnpy = GasDataSet(
+        500,
+        operation="radial_at_r1.1",
+        directory=tmp_path,
+    )
+    assert dsnpy.nfields == 1
+
+
 def test_save_current_dir(test_data_dir, tmp_path):
     os.chdir(test_data_dir / "idefix_spherical_planet3d")
     shutil.copy("idefix.ini", tmp_path / "idefix.ini")
