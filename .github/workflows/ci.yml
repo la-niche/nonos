@@ -84,6 +84,10 @@ jobs:
     runs-on: ubuntu-latest
     name: type-checking
 
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-type_check
+      cancel-in-progress: false
+
     steps:
     - uses: actions/checkout@v4
     - name: Setup Python
