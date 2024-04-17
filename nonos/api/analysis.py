@@ -724,8 +724,14 @@ class GasField:
         ind_on = self._get_ind_output_number(pd.t)
         return np.arctan2(pd.y, pd.x)[ind_on] % (2 * np.pi)
 
-    def latitudinal_projection(self, theta=None) -> "GasField":
-        operation = self.operation + "_latitudinal_projection"
+    def latitudinal_projection(self, theta=None, *, name_operation=None) -> "GasField":
+        if name_operation is None:
+            if theta is None:
+                operation = self.operation + "_latitudinal_projection"
+            else:
+                operation = self.operation + f"_latitudinal_projection{np.pi/2-theta}"
+        else:
+            operation = self.operation + "_" + name_operation
         imid = self.find_imid()
         if self.native_geometry == "polar":
             ret_coords = Coordinates(
@@ -887,8 +893,14 @@ class GasField:
     #         rotate_by=self._rotate_by,
     #     )
 
-    def vertical_projection(self, z=None) -> "GasField":
-        operation = self.operation + "_vertical_projection"
+    def vertical_projection(self, z=None, *, name_operation=None) -> "GasField":
+        if name_operation is None:
+            if z is None:
+                operation = self.operation + "_vertical_projection"
+            else:
+                operation = self.operation + f"_vertical_projection{z}"
+        else:
+            operation = self.operation + "_" + name_operation
         imid = self.find_imid()
         if self.native_geometry == "cartesian":
             ret_coords = Coordinates(
@@ -992,7 +1004,7 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def latitudinal_at_theta(self, theta=None, name_operation=None) -> "GasField":
+    def latitudinal_at_theta(self, theta=None, *, name_operation=None) -> "GasField":
         logger.info("latitudinal_at_theta TO BE TESTED")
         if theta is None:
             if self.native_geometry in ("cartesian", "polar", "spherical"):
@@ -1072,7 +1084,7 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def vertical_at_z(self, z=None, name_operation=None) -> "GasField":
+    def vertical_at_z(self, z=None, *, name_operation=None) -> "GasField":
         logger.info("vertical_at_z TO BE TESTED")
         # self.field = r"%s$_{\rm mid}$" % self.field
         if z is None:
@@ -1164,11 +1176,14 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def azimuthal_at_phi(self, phi=None) -> "GasField":
+    def azimuthal_at_phi(self, phi=None, *, name_operation=None) -> "GasField":
         if phi is None:
             phi = 0.0
         # self.field = r"%s ($\phi_P$)" % self.field
-        operation = self.operation + f"_azimuthal_at_phi{phi}"
+        if name_operation is None:
+            operation = self.operation + f"_azimuthal_at_phi{phi}"
+        else:
+            operation = self.operation + "_" + name_operation
         # operation = self.operation + f"_azimuthal_at_phivortex"
         iphi = self.find_iphi(phi=phi)
         if self.native_geometry == "cartesian":
@@ -1335,10 +1350,13 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def radial_at_r(self, distance=None) -> "GasField":
+    def radial_at_r(self, distance=None, *, name_operation=None) -> "GasField":
         if distance is None:
             distance = 1.0
-        operation = self.operation + f"_radial_at_r{distance}"
+        if name_operation is None:
+            operation = self.operation + f"_radial_at_r{distance}"
+        else:
+            operation = self.operation + "_" + name_operation
         ir1 = self.find_ir(distance=distance)
         if self.native_geometry == "cartesian":
             raise NotImplementedError(
@@ -1373,8 +1391,15 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def radial_average_interval(self, vmin=None, vmax=None) -> "GasField":
-        operation = self.operation + f"_radial_average_interval_{vmin}_{vmax}"
+    def radial_average_interval(self, vmin=None, vmax=None, *, name_operation=None) -> "GasField":
+        if (vmin is None) or (vmax is None):
+            raise ValueError(
+                f"The radial interval {vmin=} and {vmax=} should be defined"
+            )
+        if name_operation is None:
+            operation = self.operation + f"_radial_average_interval_{vmin}_{vmax}"
+        else:
+            operation = self.operation + "_" + name_operation
         irmin = self.find_ir(distance=vmin)
         irmax = self.find_ir(distance=vmax)
         ir = self.find_ir(distance=(vmax - vmin) / 2)
