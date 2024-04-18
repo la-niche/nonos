@@ -729,9 +729,13 @@ class GasField:
             operation_suffix = "latitudinal_projection"
             if theta is not None:
                 operation_suffix += str(np.pi / 2 - theta)
+        elif name_operation == "":
+            raise ValueError("name_operation should not be an empty string")
         else:
             operation_suffix = name_operation
-        operation = "_".join([self.operation, operation_suffix])
+        if operation_suffix:
+            operation_suffix = f"_{operation_suffix}"
+        operation = self.operation + operation_suffix
         imid = self.find_imid()
         if self.native_geometry == "polar":
             ret_coords = Coordinates(
@@ -895,12 +899,16 @@ class GasField:
 
     def vertical_projection(self, z=None, *, name_operation=None) -> "GasField":
         if name_operation is None:
-            if z is None:
-                operation = self.operation + "_vertical_projection"
-            else:
-                operation = self.operation + f"_vertical_projection{z}"
+            operation_suffix = "vertical_projection"
+            if z is not None:
+                operation_suffix += str(z)
+        elif name_operation == "":
+            raise ValueError("name_operation should not be an empty string")
         else:
-            operation = self.operation + "_" + name_operation
+            operation_suffix = name_operation
+        if operation_suffix:
+            operation_suffix = f"_{operation_suffix}"
+        operation = self.operation + operation_suffix
         imid = self.find_imid()
         if self.native_geometry == "cartesian":
             ret_coords = Coordinates(
@@ -959,9 +967,16 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def vertical_at_midplane(self) -> "GasField":
-        # self.field = r"%s$_{\rm mid}$" % self.field
-        operation = self.operation + "_vertical_at_midplane"
+    def vertical_at_midplane(self, *, name_operation=None) -> "GasField":
+        if name_operation is None:
+            operation_suffix = "vertical_at_midplane"
+        elif name_operation == "":
+            raise ValueError("name_operation should not be an empty string")
+        else:
+            operation_suffix = name_operation
+        if operation_suffix:
+            operation_suffix = f"_{operation_suffix}"
+        operation = self.operation + operation_suffix
         imid = self.find_imid()
         if self.native_geometry == "cartesian":
             # find_around looks around the 2 coords values that surround coordmed at imid
@@ -1005,14 +1020,18 @@ class GasField:
         )
 
     def latitudinal_at_theta(self, theta=None, *, name_operation=None) -> "GasField":
-        logger.info("latitudinal_at_theta TO BE TESTED")
         if theta is None:
             if self.native_geometry in ("cartesian", "polar", "spherical"):
                 theta = 0.0
         if name_operation is None:
-            operation = self.operation + f"_latitudinal_at_theta{np.pi/2-theta}"
+            operation_suffix = f"latitudinal_at_theta{np.pi/2-theta}"
+        elif name_operation == "":
+            raise ValueError("name_operation should not be an empty string")
         else:
-            operation = self.operation + "_" + name_operation
+            operation_suffix = name_operation
+        if operation_suffix:
+            operation_suffix = f"_{operation_suffix}"
+        operation = self.operation + operation_suffix
         imid = self.find_imid(altitude=theta)
         if self.native_geometry == "polar":
             data_at_theta = np.zeros((self.shape[0], self.shape[1]), dtype=">f4")
@@ -1086,14 +1105,17 @@ class GasField:
 
     def vertical_at_z(self, z=None, *, name_operation=None) -> "GasField":
         logger.info("vertical_at_z TO BE TESTED")
-        # self.field = r"%s$_{\rm mid}$" % self.field
         if z is None:
             z = 0
         if name_operation is None:
-            operation = self.operation + f"_vertical_at_z{z}"
+            operation_suffix = f"vertical_at_z{z}"
+        elif name_operation == "":
+            raise ValueError("name_operation should not be an empty string")
         else:
-            operation = self.operation + "_" + name_operation
-
+            operation_suffix = name_operation
+        if operation_suffix:
+            operation_suffix = f"_{operation_suffix}"
+        operation = self.operation + operation_suffix
         imid = self.find_imid(altitude=z)
         if self.native_geometry == "cartesian":
             ret_coords = Coordinates(
@@ -1179,12 +1201,15 @@ class GasField:
     def azimuthal_at_phi(self, phi=None, *, name_operation=None) -> "GasField":
         if phi is None:
             phi = 0.0
-        # self.field = r"%s ($\phi_P$)" % self.field
         if name_operation is None:
-            operation = self.operation + f"_azimuthal_at_phi{phi}"
+            operation_suffix = f"azimuthal_at_phi{phi}"
+        elif name_operation == "":
+            raise ValueError("name_operation should not be an empty string")
         else:
-            operation = self.operation + "_" + name_operation
-        # operation = self.operation + f"_azimuthal_at_phivortex"
+            operation_suffix = name_operation
+        if operation_suffix:
+            operation_suffix = f"_{operation_suffix}"
+        operation = self.operation + operation_suffix
         iphi = self.find_iphi(phi=phi)
         if self.native_geometry == "cartesian":
             raise NotImplementedError(
@@ -1219,13 +1244,25 @@ class GasField:
         )
 
     def azimuthal_at_planet(
-        self, planet_number: Optional[int] = None, *, planet_file: Optional[str] = None
+        self,
+        planet_number: Optional[int] = None,
+        *,
+        planet_file: Optional[str] = None,
+        name_operation=None,
     ) -> "GasField":
         planet_file = _parse_planet_file(
             planet_number=planet_number, planet_file=planet_file
         )
         del planet_number
-        operation = self.operation + "_azimuthal_at_planet"
+        if name_operation is None:
+            operation_suffix = "azimuthal_at_planet"
+        elif name_operation == "":
+            raise ValueError("name_operation should not be an empty string")
+        else:
+            operation_suffix = name_operation
+        if operation_suffix:
+            operation_suffix = f"_{operation_suffix}"
+        operation = self.operation + operation_suffix
         phip = self.find_phip(planet_file=planet_file)
         aziphip = self.azimuthal_at_phi(phi=phip)
         return GasField(
@@ -1240,9 +1277,16 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def azimuthal_average(self) -> "GasField":
-        # self.field = r"$\langle$%s$\rangle$" % self.field
-        operation = self.operation + "_azimuthal_average"
+    def azimuthal_average(self, *, name_operation=None) -> "GasField":
+        if name_operation is None:
+            operation_suffix = "azimuthal_average"
+        elif name_operation == "":
+            raise ValueError("name_operation should not be an empty string")
+        else:
+            operation_suffix = name_operation
+        if operation_suffix:
+            operation_suffix = f"_{operation_suffix}"
+        operation = self.operation + operation_suffix
         iphi = self.find_iphi(phi=0)
         if self.native_geometry == "cartesian":
             raise NotImplementedError(
@@ -1280,15 +1324,26 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def remove_planet_hill(
-        self, planet_number: Optional[int] = None, *, planet_file: Optional[str] = None
+    def remove_planet_hill_band(
+        self,
+        planet_number: Optional[int] = None,
+        *,
+        planet_file: Optional[str] = None,
+        name_operation=None,
     ) -> "GasField":
         planet_file = _parse_planet_file(
             planet_number=planet_number, planet_file=planet_file
         )
         del planet_number
-        # self.field = r"$\langle$%s$\rangle$" % self.field
-        operation = self.operation + "_remove_planet_hill"
+        if name_operation is None:
+            operation_suffix = "remove_planet_hill_band"
+        elif name_operation == "":
+            raise ValueError("name_operation should not be an empty string")
+        else:
+            operation_suffix = name_operation
+        if operation_suffix:
+            operation_suffix = f"_{operation_suffix}"
+        operation = self.operation + operation_suffix
         phip = self.find_phip(planet_file=planet_file)
         rp = self.find_rp(planet_file=planet_file)
         rhill = self.find_rhill(planet_file=planet_file)
@@ -1354,9 +1409,14 @@ class GasField:
         if distance is None:
             distance = 1.0
         if name_operation is None:
-            operation = self.operation + f"_radial_at_r{distance}"
+            operation_suffix = f"radial_at_r{distance}"
+        elif name_operation == "":
+            raise ValueError("name_operation should not be an empty string")
         else:
-            operation = self.operation + "_" + name_operation
+            operation_suffix = name_operation
+        if operation_suffix:
+            operation_suffix = f"_{operation_suffix}"
+        operation = self.operation + operation_suffix
         ir1 = self.find_ir(distance=distance)
         if self.native_geometry == "cartesian":
             raise NotImplementedError(
@@ -1399,9 +1459,14 @@ class GasField:
                 f"The radial interval {vmin=} and {vmax=} should be defined"
             )
         if name_operation is None:
-            operation = self.operation + f"_radial_average_interval_{vmin}_{vmax}"
+            operation_suffix = f"radial_average_interval_{vmin}_{vmax}"
+        elif name_operation == "":
+            raise ValueError("name_operation should not be an empty string")
         else:
-            operation = self.operation + "_" + name_operation
+            operation_suffix = name_operation
+        if operation_suffix:
+            operation_suffix = f"_{operation_suffix}"
+        operation = self.operation + operation_suffix
         irmin = self.find_ir(distance=vmin)
         irmax = self.find_ir(distance=vmax)
         ir = self.find_ir(distance=(vmax - vmin) / 2)
