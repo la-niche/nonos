@@ -1391,7 +1391,9 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def radial_average_interval(self, vmin=None, vmax=None, *, name_operation=None) -> "GasField":
+    def radial_average_interval(
+        self, vmin=None, vmax=None, *, name_operation=None
+    ) -> "GasField":
         if (vmin is None) or (vmax is None):
             raise ValueError(
                 f"The radial interval {vmin=} and {vmax=} should be defined"
