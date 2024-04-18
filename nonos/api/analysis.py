@@ -728,7 +728,7 @@ class GasField:
         if name_operation is None:
             operation_suffix = "latitudinal_projection"
             if theta is not None:
-                operation_suffix += str(np.pi/2-theta)
+                operation_suffix += str(np.pi / 2 - theta)
         else:
             operation_suffix = name_operation
         operation = "_".join([self.operation, operation_suffix])
