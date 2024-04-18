@@ -119,7 +119,7 @@ def test_npy_radial_at_r(test_data_dir, tmp_path):
     assert list(dsnpy.keys()) == ["RHO"]
 
 
-def test_radial_average_interval_custom_name(test_data_dir):
+def test_radial_average_interval_vmin_vmax(test_data_dir):
     os.chdir(test_data_dir / "idefix_spherical_planet3d")
     with pytest.raises(
         ValueError,
@@ -127,8 +127,15 @@ def test_radial_average_interval_custom_name(test_data_dir):
     ):
         GasDataSet(500)["RHO"].radial_average_interval(1)
 
+
+def test_default_name_operation(test_data_dir):
+    os.chdir(test_data_dir / "idefix_spherical_planet3d")
     gf = GasDataSet(500)["RHO"].radial_average_interval(1,2)
     assert gf.operation == "_radial_average_interval_1_2"
+
+
+def test_custom_name_operation(test_data_dir):
+    os.chdir(test_data_dir / "idefix_spherical_planet3d")
     gfno = GasDataSet(500)["RHO"].radial_average_interval(1,2,name_operation="radial_custom")
     assert gfno.operation == "_radial_custom"
 
