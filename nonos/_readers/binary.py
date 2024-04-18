@@ -728,7 +728,8 @@ class NPYReader(ReaderMixin):
         prefix = match.group("prefix")
         output_number = int(match.group("output_number"))
 
-        header = ref_file.parents[1] / "header" / f"header_{prefix}.json"
+        op_suffix = f"_{prefix}" if prefix else ""
+        header = ref_file.parents[1] / "header" / f"header{op_suffix}.json"
         with open(header) as fh:
             header_data = json.load(fh)
 

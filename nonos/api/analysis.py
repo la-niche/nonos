@@ -620,7 +620,7 @@ class GasField:
             directory = Path.cwd()
         else:
             directory = Path(directory)
-        operation = self.operation or "_"
+        operation = self.operation
         headerdir = directory / "header"
         subdir = directory / self.field.lower()
         file = subdir / f"{operation}_{self.field}.{self.on:04d}.npy"
@@ -633,12 +633,13 @@ class GasField:
                     np.save(fh, self.data)
 
         group_of_files = list(subdir.glob(f"{operation}*"))
-        header_file = headerdir / f"header{operation}.json"
+        op_suffix = f"_{operation}" if operation != "" else ""
+        filename = f"header{op_suffix}.json"
+        header_file = headerdir / filename
         if (len(group_of_files) > 0 and not header_file.is_file()) or header_only:
             headerdir.mkdir(exist_ok=True, parents=True)
-            headername = headerdir / f"header{operation}.json"
-            if headername.is_file():
-                logger.info("{} already exists", headername)
+            if header_file.is_file():
+                logger.info("{} already exists", header_file)
             else:
                 dictsaved = self.coords.get_attributes
 
@@ -648,7 +649,7 @@ class GasField:
 
                 for key, value in filter(is_array, dictsaved.items()):
                     dictsaved[key] = value.tolist()
-                with open(headername, "w") as hfile:
+                with open(header_file, "w") as hfile:
                     json.dump(dictsaved, hfile, indent=2)
 
         src = self.inifile.resolve()
