@@ -725,28 +725,28 @@ class GasField:
         return np.arctan2(pd.y, pd.x)[ind_on] % (2 * np.pi)
 
     @staticmethod
-    def _parse_name_operation(
+    def _parse_operation_name(
         *,
         prefix: str,
         default_suffix: str,
-        user_suffix: Optional[str],
+        operation_name: Optional[str],
     ) -> str:
-        if user_suffix == "":
-            raise ValueError("suffix cannot be empty")
-        suffix = user_suffix or default_suffix
+        if operation_name == "":
+            raise ValueError("operation_name cannot be empty")
+        suffix = operation_name or default_suffix
         if prefix:
             return f"{prefix}_{suffix}"
         else:
             return suffix
 
-    def latitudinal_projection(self, theta=None, *, name_operation=None) -> "GasField":
+    def latitudinal_projection(self, theta=None, *, operation_name=None) -> "GasField":
         default_suffix = "latitudinal_projection"
         if theta is not None:
             default_suffix += str(np.pi / 2 - theta)
-        operation = self._parse_name_operation(
+        operation = self._parse_operation_name(
             prefix=self.operation,
             default_suffix=default_suffix,
-            user_suffix=name_operation,
+            operation_name=operation_name,
         )
 
         imid = self.find_imid()
@@ -910,14 +910,14 @@ class GasField:
     #         rotate_by=self._rotate_by,
     #     )
 
-    def vertical_projection(self, z=None, *, name_operation=None) -> "GasField":
+    def vertical_projection(self, z=None, *, operation_name=None) -> "GasField":
         default_suffix = "vertical_projection"
         if z is not None:
             default_suffix += str(z)
-        operation = self._parse_name_operation(
+        operation = self._parse_operation_name(
             prefix=self.operation,
             default_suffix=default_suffix,
-            user_suffix=name_operation,
+            operation_name=operation_name,
         )
 
         imid = self.find_imid()
@@ -978,11 +978,11 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def vertical_at_midplane(self, *, name_operation=None) -> "GasField":
-        operation = self._parse_name_operation(
+    def vertical_at_midplane(self, *, operation_name=None) -> "GasField":
+        operation = self._parse_operation_name(
             prefix=self.operation,
             default_suffix="vertical_at_midplane",
-            user_suffix=name_operation,
+            operation_name=operation_name,
         )
         imid = self.find_imid()
         if self.native_geometry == "cartesian":
@@ -1026,11 +1026,11 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def latitudinal_at_theta(self, theta=0.0, *, name_operation=None) -> "GasField":
-        operation = self._parse_name_operation(
+    def latitudinal_at_theta(self, theta=0.0, *, operation_name=None) -> "GasField":
+        operation = self._parse_operation_name(
             prefix=self.operation,
             default_suffix=f"latitudinal_at_theta{np.pi/2-theta}",
-            user_suffix=name_operation,
+            operation_name=operation_name,
         )
 
         imid = self.find_imid(altitude=theta)
@@ -1104,12 +1104,12 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def vertical_at_z(self, z=0.0, *, name_operation=None) -> "GasField":
+    def vertical_at_z(self, z=0.0, *, operation_name=None) -> "GasField":
         logger.info("vertical_at_z TO BE TESTED")
-        operation = self._parse_name_operation(
+        operation = self._parse_operation_name(
             prefix=self.operation,
             default_suffix=f"vertical_at_z{z}",
-            user_suffix=name_operation,
+            operation_name=operation_name,
         )
         imid = self.find_imid(altitude=z)
         if self.native_geometry == "cartesian":
@@ -1193,11 +1193,11 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def azimuthal_at_phi(self, phi=0.0, *, name_operation=None) -> "GasField":
-        operation = self._parse_name_operation(
+    def azimuthal_at_phi(self, phi=0.0, *, operation_name=None) -> "GasField":
+        operation = self._parse_operation_name(
             prefix=self.operation,
             default_suffix=f"azimuthal_at_phi{phi}",
-            user_suffix=name_operation,
+            operation_name=operation_name,
         )
         iphi = self.find_iphi(phi=phi)
         if self.native_geometry == "cartesian":
@@ -1237,17 +1237,17 @@ class GasField:
         planet_number: Optional[int] = None,
         *,
         planet_file: Optional[str] = None,
-        name_operation=None,
+        operation_name=None,
     ) -> "GasField":
         planet_file = _parse_planet_file(
             planet_number=planet_number, planet_file=planet_file
         )
         del planet_number
 
-        operation = self._parse_name_operation(
+        operation = self._parse_operation_name(
             prefix=self.operation,
             default_suffix="azimuthal_at_planet",
-            user_suffix=name_operation,
+            operation_name=operation_name,
         )
 
         phip = self.find_phip(planet_file=planet_file)
@@ -1264,11 +1264,11 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def azimuthal_average(self, *, name_operation=None) -> "GasField":
-        operation = self._parse_name_operation(
+    def azimuthal_average(self, *, operation_name=None) -> "GasField":
+        operation = self._parse_operation_name(
             prefix=self.operation,
             default_suffix="azimuthal_average",
-            user_suffix=name_operation,
+            operation_name=operation_name,
         )
 
         iphi = self.find_iphi(phi=0)
@@ -1313,17 +1313,17 @@ class GasField:
         planet_number: Optional[int] = None,
         *,
         planet_file: Optional[str] = None,
-        name_operation=None,
+        operation_name=None,
     ) -> "GasField":
         planet_file = _parse_planet_file(
             planet_number=planet_number, planet_file=planet_file
         )
         del planet_number
 
-        operation = self._parse_name_operation(
+        operation = self._parse_operation_name(
             prefix=self.operation,
             default_suffix="remove_planet_hill_band",
-            user_suffix=name_operation,
+            operation_name=operation_name,
         )
 
         phip = self.find_phip(planet_file=planet_file)
@@ -1387,11 +1387,11 @@ class GasField:
             rotate_by=self._rotate_by,
         )
 
-    def radial_at_r(self, distance=1.0, *, name_operation=None) -> "GasField":
-        operation = self._parse_name_operation(
+    def radial_at_r(self, distance=1.0, *, operation_name=None) -> "GasField":
+        operation = self._parse_operation_name(
             prefix=self.operation,
             default_suffix=f"radial_at_r{distance}",
-            user_suffix=name_operation,
+            operation_name=operation_name,
         )
 
         ir1 = self.find_ir(distance=distance)
@@ -1429,17 +1429,17 @@ class GasField:
         )
 
     def radial_average_interval(
-        self, vmin=None, vmax=None, *, name_operation=None
+        self, vmin=None, vmax=None, *, operation_name=None
     ) -> "GasField":
         if (vmin is None) or (vmax is None):
             raise ValueError(
                 f"The radial interval {vmin=} and {vmax=} should be defined"
             )
 
-        operation = self._parse_name_operation(
+        operation = self._parse_operation_name(
             prefix=self.operation,
             default_suffix=f"radial_average_interval_{vmin}_{vmax}",
-            user_suffix=name_operation,
+            operation_name=operation_name,
         )
 
         irmin = self.find_ir(distance=vmin)

@@ -128,16 +128,16 @@ def test_radial_average_interval_vmin_vmax(test_data_dir):
         GasDataSet(500)["RHO"].radial_average_interval(1)
 
 
-def test_default_name_operation(test_data_dir):
+def test_default_operation_name(test_data_dir):
     os.chdir(test_data_dir / "idefix_spherical_planet3d")
     gf = GasDataSet(500)["RHO"].radial_average_interval(1, 2)
     assert gf.operation == "_radial_average_interval_1_2"
 
 
-def test_custom_name_operation(test_data_dir):
+def test_custom_operation_name(test_data_dir):
     os.chdir(test_data_dir / "idefix_spherical_planet3d")
     gfno = GasDataSet(500)["RHO"].radial_average_interval(
-        1, 2, name_operation="radial_custom"
+        1, 2, operation_name="radial_custom"
     )
     assert gfno.operation == "_radial_custom"
 
