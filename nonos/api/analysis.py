@@ -726,12 +726,12 @@ class GasField:
 
     def latitudinal_projection(self, theta=None, *, name_operation=None) -> "GasField":
         if name_operation is None:
-            if theta is None:
-                operation = self.operation + "_latitudinal_projection"
-            else:
-                operation = self.operation + f"_latitudinal_projection{np.pi/2-theta}"
+            operation_suffix = "latitudinal_projection"
+            if theta is not None:
+                operation_suffix += str(np.pi/2-theta)
         else:
-            operation = self.operation + "_" + name_operation
+            operation_suffix = name_operation
+        operation = "_".join([self.operation, operation_suffix])
         imid = self.find_imid()
         if self.native_geometry == "polar":
             ret_coords = Coordinates(
