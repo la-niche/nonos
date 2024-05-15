@@ -133,3 +133,6 @@ exclude_lines = [
     "^ +\\.\\.\\.$",
     "-> ['\"]?NoReturn['\"]?:",
 ]
+
+[tool.coverage.html]
+skip_covered = true
