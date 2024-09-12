@@ -790,8 +790,8 @@ class GasField:
             km = find_nearest(self.coords.theta, self.coords.theta.min())
             kp = find_nearest(self.coords.theta, self.coords.theta.max())
             if theta is not None:
-                km = find_nearest(self.coords.theta, np.pi / 2 + theta)
-                kp = find_nearest(self.coords.theta, np.pi / 2 - theta)
+                kp = find_nearest(self.coords.theta, np.pi / 2 + theta)
+                km = find_nearest(self.coords.theta, np.pi / 2 - theta)
             ret_data = (
                 np.sum(
                     (
