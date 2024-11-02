@@ -46,17 +46,19 @@ def test_set_mpl_style(scaling):
 
 
 @pytest.mark.mpl_image_compare()
-def test_2D_polar_plane(test_data_dir, temp_figure_and_axis):
+def test_2D_polar_plane(test_data_dir):
     ds = GasDataSet(23, directory=test_data_dir / "idefix_newvtk_planet2d")
-    fig, ax = temp_figure_and_axis
+    fig = Figure(figsize=(6.4, 4.8))
+    ax = fig.add_subplot()
     ds["VX1"].map("R", "phi").plot(fig, ax, title="vr")
     return fig
 
 
 @pytest.mark.mpl_image_compare()
-def test_symlog(test_data_dir, temp_figure_and_axis):
+def test_symlog(test_data_dir):
     ds = GasDataSet(23, directory=test_data_dir / "idefix_newvtk_planet2d")
-    fig, ax = temp_figure_and_axis
+    fig = Figure(figsize=(6.4, 4.8))
+    ax = fig.add_subplot()
     ds["VX1"].map("R", "phi").plot(
         fig,
         ax,
@@ -67,18 +69,20 @@ def test_symlog(test_data_dir, temp_figure_and_axis):
 
 
 @pytest.mark.mpl_image_compare()
-def test_3D_aa_xz(test_data_dir, temp_figure_and_axis):
+def test_3D_aa_xz(test_data_dir):
     ds = GasDataSet(500, directory=test_data_dir / "idefix_spherical_planet3d")
-    fig, ax = temp_figure_and_axis
+    fig = Figure(figsize=(6.4, 4.8))
+    ax = fig.add_subplot()
 
     ds["RHO"].azimuthal_average().map("x", "z").plot(fig, ax, log=True, title="rho")
     return fig
 
 
 @pytest.mark.mpl_image_compare()
-def test_3D_vm_phiR(test_data_dir, temp_figure_and_axis):
+def test_3D_vm_phiR(test_data_dir):
     ds = GasDataSet(500, directory=test_data_dir / "idefix_spherical_planet3d")
-    fig, ax = temp_figure_and_axis
+    fig = Figure(figsize=(6.4, 4.8))
+    ax = fig.add_subplot()
 
     ds["RHO"].vertical_at_midplane().map("phi", "R").plot(
         fig, ax, log=True, title="rho"
@@ -87,9 +91,10 @@ def test_3D_vm_phiR(test_data_dir, temp_figure_and_axis):
 
 
 @pytest.mark.mpl_image_compare()
-def test_3D_vm_xy(test_data_dir, temp_figure_and_axis):
+def test_3D_vm_xy(test_data_dir):
     ds = GasDataSet(500, directory=test_data_dir / "idefix_spherical_planet3d")
-    fig, ax = temp_figure_and_axis
+    fig = Figure(figsize=(6.4, 4.8))
+    ax = fig.add_subplot()
 
     ds["RHO"].vertical_at_midplane().map("x", "y").plot(fig, ax, log=True, title="rho")
     return fig
