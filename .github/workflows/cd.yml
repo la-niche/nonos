@@ -46,8 +46,8 @@ jobs:
   publish-lib:
     name: Publish nonos release
     needs:
-    - pre-publish-checks
     - build-lib
+    - pre-publish-checks
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     environment:
@@ -84,8 +84,8 @@ jobs:
   publish-cli:
     name: Publish nonos-cli release
     needs:
-    - pre-publish-checks
     - build-cli
+    - pre-publish-checks
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/cli-v') }}
     runs-on: ubuntu-latest
     environment:
