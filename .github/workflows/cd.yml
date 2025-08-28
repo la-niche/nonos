@@ -16,7 +16,7 @@ on:
 jobs:
   pre-publish-checks:
     runs-on: ubuntu-latest
-    name: pre-publication checks
+    name: B. pre-publication checks
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       with:
@@ -27,7 +27,7 @@ jobs:
     - run: uv run scripts/pre_publish_checks.py
 
   build-lib:
-    name: Build lib package
+    name: A. Build lib package
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Source
@@ -44,7 +44,7 @@ jobs:
         path: dist
 
   publish-lib:
-    name: Publish nonos release
+    name: D. Publish nonos release
     needs:
     - build-lib
     - pre-publish-checks
@@ -65,7 +65,7 @@ jobs:
       uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
 
   build-cli:
-    name: Build CLI package
+    name: C. Build CLI package
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Source
@@ -82,7 +82,7 @@ jobs:
         path: dist
 
   publish-cli:
-    name: Publish nonos-cli release
+    name: E. Publish nonos-cli release
     needs:
     - build-cli
     - pre-publish-checks
