@@ -28,7 +28,6 @@ jobs:
 
   build-lib:
     name: Build lib package
-    needs: [pre-publish-checks]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Source
@@ -46,7 +45,9 @@ jobs:
 
   publish-lib:
     name: Publish nonos release
-    needs: [build-lib]
+    needs:
+    - pre-publish-checks
+    - build-lib
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     environment:
@@ -65,7 +66,6 @@ jobs:
 
   build-cli:
     name: Build CLI package
-    needs: [pre-publish-checks]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Source
@@ -83,7 +83,9 @@ jobs:
 
   publish-cli:
     name: Publish nonos-cli release
-    needs: [build-cli]
+    needs:
+    - pre-publish-checks
+    - build-cli
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/cli-v') }}
     runs-on: ubuntu-latest
     environment:
