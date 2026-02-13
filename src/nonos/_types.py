@@ -61,15 +61,15 @@ class FrameType(Enum):
 
 @final
 @dataclass(frozen=True, eq=False, slots=True)
-class BinData:
+class BinData(Generic[F]):
     data: StrDict
     geometry: "Geometry"
-    x1: FloatArray
-    x2: FloatArray
-    x3: FloatArray
+    x1: FArray1D[F]
+    x2: FArray1D[F]
+    x3: FArray1D[F]
 
     @classmethod
-    def default_init(cls) -> "BinData":
+    def default_init(cls) -> "BinData[F]":
         return BinData(
             **(
                 {  # type: ignore
@@ -179,7 +179,7 @@ class IniData:
     meta: StrDict
 
 
-class BinReader(Protocol):
+class BinReader(Protocol, Generic[F]):
     @staticmethod
     def parse_output_number_and_filename(
         file_or_number: os.PathLike[str] | int,
@@ -192,7 +192,7 @@ class BinReader(Protocol):
     def get_bin_files(directory: os.PathLike[str], /) -> list[Path]: ...
 
     @staticmethod
-    def read(file: os.PathLike[str], /, **meta: Any) -> BinData: ...
+    def read(file: os.PathLike[str], /, **meta: Any) -> BinData[F]: ...
 
 
 class PlanetReader(Protocol, Generic[F]):

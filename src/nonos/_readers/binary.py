@@ -8,12 +8,12 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, final
+from typing import Any, Generic, final
 
 import numpy as np
 
 from nonos._geometry import Geometry
-from nonos._types import BinData, FloatArray
+from nonos._types import BinData, F, FArray, FArray1D, FArray3D
 
 if sys.version_info >= (3, 11):
     from typing import assert_never
@@ -26,7 +26,7 @@ else:
 
 
 @final
-class VTKReader:
+class VTKReader(Generic[F]):
     NATIVE_COORDINATE_REGEXP = re.compile(r"X(1|2|3)(L|C)_NATIVE_COORDINATES")
 
     @staticmethod
@@ -59,7 +59,7 @@ class VTKReader:
         return sorted(directory.glob("data.*.vtk"))
 
     @staticmethod
-    def read(file: str | os.PathLike[str], /, **meta: Any) -> BinData:
+    def read(file: str | os.PathLike[str], /, **meta: Any) -> BinData[F]:
         """
         Adapted from Geoffroy Lesur
         Function that reads a vtk file in polar coordinates
@@ -529,7 +529,7 @@ class FargoReaderHelper:
 
 
 @final
-class Fargo3DReader:
+class Fargo3DReader(Generic[F]):
     @staticmethod
     def parse_output_number_and_filename(
         file_or_number: os.PathLike[str] | int,
@@ -550,7 +550,7 @@ class Fargo3DReader:
         file: os.PathLike[str],
         /,
         **meta: Any,
-    ) -> BinData:
+    ) -> BinData[F]:
         output_number, directory = FargoReaderHelper._get_output_number_and_dir_from(
             file
         )
@@ -606,7 +606,7 @@ class Fargo3DReader:
         else:
             raise NotImplementedError(f"Geometry {geometry_str!r} is not supported")
 
-        def _read_array(file: Path) -> FloatArray:
+        def _read_array(file: Path) -> FArray3D[F]:
             return np.roll(
                 np.fromfile(file, dtype="float64")
                 .reshape(grid_shape)
@@ -630,7 +630,7 @@ class Fargo3DReader:
 
 
 @final
-class FargoADSGReader:
+class FargoADSGReader(Generic[F]):
     @staticmethod
     def parse_output_number_and_filename(
         file_or_number: os.PathLike[str] | int,
@@ -651,7 +651,7 @@ class FargoADSGReader:
         file: os.PathLike[str],
         /,
         **meta: Any,  # noqa: ARG004
-    ) -> BinData:
+    ) -> BinData[F]:
         output_number, directory = FargoReaderHelper._get_output_number_and_dir_from(
             file
         )
@@ -680,7 +680,7 @@ class FargoADSGReader:
         n3 = len(V.x3) - 1
         grid_shape = n3, n1, n2
 
-        def _read_array(file: Path) -> FloatArray:
+        def _read_array(file: Path) -> FArray3D[F]:
             return (  # type: ignore[no-any-return]
                 np.fromfile(file, dtype="float64")
                 .reshape(grid_shape)
@@ -768,7 +768,7 @@ class NPYReader:
         return sorted(file_paths)
 
     @staticmethod
-    def read(file: os.PathLike[str], /, **meta: Any) -> BinData:
+    def read(file: os.PathLike[str], /, **meta: Any) -> BinData[np.float32]:
         meta.setdefault("prefix", "")
 
         ref_file = Path(file).resolve()
@@ -784,7 +784,7 @@ class NPYReader:
             header_data = json.load(fh)
 
         geometry = Geometry(header_data.pop("geometry"))
-        coordinates: dict[str, FloatArray] = {
+        coordinates: dict[str, FArray1D] = {
             k: np.array(v, dtype="float32") for k, v in header_data.items()
         }
         x1, x2, x3 = coordinates.values()
@@ -806,7 +806,7 @@ class NPYReader:
         # sanity check: we should have rediscovered our starting file by now
         assert ref_file in fields_found.values()
 
-        data: dict[str, FloatArray] = {
+        data: dict[str, FArray] = {
             k: np.load(v, allow_pickle=True) for k, v in fields_found.items()
         }
 
