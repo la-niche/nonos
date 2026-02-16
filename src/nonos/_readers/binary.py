@@ -118,7 +118,9 @@ class VTKReader:
                 elif entry == "GEOMETRY":
                     g = np.fromfile(fid, dint, 1)
                     if g == 0:
-                        thisgeometry = Geometry.CARTESIAN
+                        raise NotImplementedError(
+                            "Support for cartesian geometry is missing"
+                        )
                     elif g == 1:
                         thisgeometry = Geometry.POLAR
                     elif g == 2:
@@ -173,67 +175,12 @@ class VTKReader:
         n2 = int(slist[2])
         n3 = int(slist[3])
 
-        x: FArray1D[f32]
-        y: FArray1D[f32]
         z: FArray1D[f32]
         r: FArray1D[f32]
         theta: FArray1D[f32]
         phi: FArray1D[f32]
 
-        if V.geometry is Geometry.CARTESIAN:
-            s = fid.readline()  # X_COORDINATES NX float
-            x = lazy_load_from_fid(fid, dtype=f32_be, count=n1)
-            s = fid.readline()  # Extra line feed added by idefix
-
-            s = fid.readline()  # Y_COORDINATES NY float
-            y = lazy_load_from_fid(fid, dtype=f32_be, count=n2)
-            s = fid.readline()  # Extra line feed added by idefix
-
-            s = fid.readline()  # Z_COORDINATES NZ float
-            z = lazy_load_from_fid(fid, dtype=f32_be, count=n3)
-            s = fid.readline()  # Extra line feed added by idefix
-            s = fid.readline()  # POINT_DATA NXNYNZ
-
-            slist = s.split()
-            point_type = slist[0].decode("utf-8")
-            npoints = int(slist[1])
-            s = fid.readline()  # EXTRA LINE FEED
-
-            if point_type == "CELL_DATA" or meta["cell"] == "centers":
-                # The file contains face coordinates, so we extrapolate to get the cell center coordinates.
-                if n1 > 1:
-                    n1 -= 1
-                    V = replace(
-                        V, x1=0.5 * (x[1:] + x[:-1]) if meta["cell"] == "centers" else x
-                    )
-                else:
-                    V = replace(V, x1=x)
-                if n2 > 1:
-                    n2 -= 1
-                    V = replace(
-                        V, x2=0.5 * (y[1:] + y[:-1]) if meta["cell"] == "centers" else y
-                    )
-                else:
-                    V = replace(V, x2=y)
-                if n3 > 1:
-                    n3 -= 1
-                    V = replace(
-                        V, x3=0.5 * (z[1:] + z[:-1]) if meta["cell"] == "centers" else z
-                    )
-                else:
-                    V = replace(V, x3=z)
-            elif point_type == "POINT_DATA":
-                V = replace(V, x1=x, x2=y, x3=z)
-
-            if (grid_size := n1 * n2 * n3) != npoints:  # pragma: no cover
-                fid.close()
-                raise ValueError(
-                    f"Grid size ({grid_size}) is not consistent with number "
-                    f"of points ({npoints}) in the data set"
-                )
-            del grid_size
-
-        elif V.geometry is Geometry.POLAR or V.geometry is Geometry.SPHERICAL:
+        if V.geometry is Geometry.POLAR or V.geometry is Geometry.SPHERICAL:
             if n3 == 1:
                 is2d = 1
             else:

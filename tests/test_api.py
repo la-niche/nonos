@@ -15,12 +15,12 @@ def test_gasfield_immutable_data(test_data_dir):
         name="test",
         data=arr,
         coordinates=Coordinates(
-            geometry=Geometry.CARTESIAN,
+            geometry=Geometry.SPHERICAL,
             x1=np.linspace(0, 1, 8),
             x2=np.linspace(0, 1, 8),
             x3=np.linspace(0, 1, 8),
         ),
-        native_geometry=Geometry.CARTESIAN,
+        native_geometry=Geometry.SPHERICAL,
         output_number=0,
         loader=Loader.resolve(
             directory=test_data_dir / "idefix_planet3d",

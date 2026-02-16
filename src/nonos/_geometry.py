@@ -30,7 +30,6 @@ else:
 
 
 class Geometry(StrEnum):
-    CARTESIAN = auto()
     POLAR = auto()
     SPHERICAL = auto()
 
@@ -68,8 +67,6 @@ assert all(axis in _AXIS_TO_STR for axis in Axis)
 
 def axes_from_geometry(geometry: Geometry, /) -> tuple[Axis, Axis, Axis]:
     match geometry:
-        case Geometry.CARTESIAN:
-            return (Axis.CARTESIAN_X, Axis.CARTESIAN_Y, Axis.CARTESIAN_Z)
         case Geometry.POLAR:
             return (Axis.CYLINDRICAL_RADIUS, Axis.AZIMUTH, Axis.CARTESIAN_Z)
         case Geometry.SPHERICAL:
@@ -129,10 +126,8 @@ def _native_axis_from_target_axis(
         case Geometry.POLAR, Axis.COLATITUDE:
             return Axis.CARTESIAN_Z
 
-        case _:
-            raise NotImplementedError(
-                f"Transformation from {native_geometry} to {axis} is not implemented"
-            )
+        case _ as unreachable:
+            assert_never(unreachable)
 
 
 def _native_plane_from_target_plane(
@@ -357,55 +352,11 @@ class Coordinates(Generic[F]):
         coords: dict[Axis, FArray1D[F]],
     ) -> dict[Axis, FArray1D[F]]:
         match self.geometry:
-            case Geometry.CARTESIAN:
-                x = coords[Axis.CARTESIAN_X]
-                y = coords[Axis.CARTESIAN_Y]
-                z = coords[Axis.CARTESIAN_Z]
-                match target_geometry:
-                    case Geometry.CARTESIAN:
-                        return {
-                            Axis.CARTESIAN_X: x,
-                            Axis.CARTESIAN_Y: y,
-                            Axis.CARTESIAN_Z: z,
-                        }
-                    case Geometry.POLAR:
-                        return {
-                            Axis.CYLINDRICAL_RADIUS: np.sqrt(x**2 + y**2),
-                            Axis.AZIMUTH: np.arctan2(y, x),
-                            Axis.CARTESIAN_Z: z,
-                        }
-                    case Geometry.SPHERICAL:
-                        return {
-                            Axis.SPHERICAL_RADIUS: np.sqrt(x**2 + y**2 + z**2),
-                            Axis.COLATITUDE: np.arctan2(np.sqrt(x**2 + y**2), z),
-                            Axis.AZIMUTH: np.arctan2(y, x),
-                        }
-                    case _ as unreachable:
-                        assert_never(unreachable)
-
             case Geometry.SPHERICAL:
                 r = coords[Axis.SPHERICAL_RADIUS]
                 theta = coords[Axis.COLATITUDE]
                 phi = coords[Axis.AZIMUTH]
                 match target_geometry:
-                    case Geometry.CARTESIAN:
-                        # note: I'm intentionally not reproducing a
-                        # special case that I don't think is needed (theta.ndim<=1)
-                        if theta.ndim <= 1:
-                            # bug-for-bug compat
-                            # this is extremely suspicious and should be inspected
-                            # more thoroughly, I suspect it's just working around
-                            # a completely different bug
-                            return {
-                                Axis.CARTESIAN_X: r * np.sin(theta) * np.cos(phi),
-                                Axis.CARTESIAN_Y: r * np.sin(theta) * np.sin(phi),
-                                Axis.CARTESIAN_Z: np.cos(theta),
-                            }
-                        return {
-                            Axis.CARTESIAN_X: r * np.sin(theta) * np.cos(phi),
-                            Axis.CARTESIAN_Y: r * np.sin(theta) * np.sin(phi),
-                            Axis.CARTESIAN_Z: r * np.cos(theta),
-                        }
                     case Geometry.POLAR:
                         return {
                             Axis.CYLINDRICAL_RADIUS: r * np.sin(theta),
@@ -426,12 +377,6 @@ class Coordinates(Generic[F]):
                 phi = coords[Axis.AZIMUTH]
                 z = coords[Axis.CARTESIAN_Z]
                 match target_geometry:
-                    case Geometry.CARTESIAN:
-                        return {
-                            Axis.CARTESIAN_X: R * np.cos(phi),
-                            Axis.CARTESIAN_Y: R * np.sin(phi),
-                            Axis.CARTESIAN_Z: z,
-                        }
                     case Geometry.POLAR:
                         return {
                             Axis.CYLINDRICAL_RADIUS: R,

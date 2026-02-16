@@ -547,14 +547,12 @@ class GasField(Generic[F]):
                     self.coordinates.get_axis_array_med(Axis.SPHERICAL_RADIUS),
                     distance,
                 )
-            case Geometry.CARTESIAN:
-                raise NotImplementedError
             case _ as unreachable:
                 assert_never(unreachable)
 
     def find_imid(self, altitude: float = 0.0) -> int:
         match self.native_geometry:
-            case Geometry.CARTESIAN | Geometry.POLAR:
+            case Geometry.POLAR:
                 arr = self.coordinates.get_axis_array_med(Axis.CARTESIAN_Z)
                 return closest_index(arr, altitude)
             case Geometry.SPHERICAL:
@@ -569,8 +567,6 @@ class GasField(Generic[F]):
                 phiarr = self.coordinates.get_axis_array(Axis.AZIMUTH)
                 mod = len(phiarr) - 1
                 return closest_index(phiarr, phi) % mod
-            case Geometry.CARTESIAN:
-                raise NotImplementedError
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -658,10 +654,6 @@ class GasField(Generic[F]):
 
         imid = self.find_imid()
         match self.native_geometry:
-            case Geometry.CARTESIAN:
-                raise NotImplementedError(
-                    "latitudinal_projection isn't implemented for cartesian geometry"
-                )
             case Geometry.POLAR:
                 ret_coords = Coordinates(
                     self.native_geometry,
@@ -751,24 +743,6 @@ class GasField(Generic[F]):
 
         imid = self.find_imid()
         match self.native_geometry:
-            case Geometry.CARTESIAN:
-                zarr = self.coordinates.get_axis_array(Axis.CARTESIAN_Z)
-                zmed = self.coordinates.get_axis_array_med(Axis.CARTESIAN_Z)
-                ret_coords = self.coordinates.project_along(
-                    Axis.CARTESIAN_Z, zmed[imid].item()
-                )
-                km = closest_index(zmed, zarr.min())
-                kp = closest_index(zmed, zarr.max())
-                if z is not None:
-                    km = closest_index(zmed, -z)
-                    kp = closest_index(zmed, z)
-                ret_data = (
-                    np.nansum(
-                        (self.data * np.ediff1d(zarr))[:, :, km : kp + 1],
-                        axis=2,
-                        dtype="float64",
-                    )
-                ).reshape(self.shape[0], self.shape[1], 1)
             case Geometry.POLAR:
                 zarr = self.coordinates.get_axis_array(Axis.CARTESIAN_Z)
                 zmed = self.coordinates.get_axis_array_med(Axis.CARTESIAN_Z)
@@ -813,15 +787,6 @@ class GasField(Generic[F]):
         )
         imid = self.find_imid()
         match self.native_geometry:
-            case Geometry.CARTESIAN:
-                zmed = self.coordinates.get_axis_array_med(Axis.CARTESIAN_Z)
-                ret_coords = self.coordinates.project_along(
-                    Axis.CARTESIAN_Z, zmed[imid].item()
-                )
-                ret_data = self.data[:, :, imid].reshape(
-                    self.shape[0], self.shape[1], 1
-                )
-                # do geometry conversion!!! -> chainer la conversion (une fois que reduction de dimension -> conversion puis plot egalement chainable)
             case Geometry.POLAR:
                 zmed = self.coordinates.get_axis_array_med(Axis.CARTESIAN_Z)
                 ret_coords = self.coordinates.project_along(
@@ -861,10 +826,6 @@ class GasField(Generic[F]):
 
         imid = self.find_imid(altitude=theta)
         match self.native_geometry:
-            case Geometry.CARTESIAN:
-                raise NotImplementedError(
-                    "latitudinal_at_theta is not implemented for cartesian geometry"
-                )
             case Geometry.POLAR:
                 data_at_theta = np.zeros((self.shape[0], self.shape[1]), dtype=">f4")
                 zmed = self.coordinates.get_axis_array_med(Axis.CARTESIAN_Z)
@@ -915,14 +876,6 @@ class GasField(Generic[F]):
         )
         imid = self.find_imid(altitude=z)
         match self.native_geometry:
-            case Geometry.CARTESIAN:
-                zmed = self.coordinates.get_axis_array(Axis.CARTESIAN_Z)
-                ret_coords = self.coordinates.project_along(
-                    Axis.CARTESIAN_Z, zmed[imid].item()
-                )
-                ret_data = self.data[:, :, closest_index(zmed, z)].reshape(
-                    self.shape[0], self.shape[1], 1
-                )
             case Geometry.POLAR:
                 zmed = self.coordinates.get_axis_array(Axis.CARTESIAN_Z)
                 ret_coords = self.coordinates.project_along(
@@ -957,10 +910,6 @@ class GasField(Generic[F]):
         )
         iphi = self.find_iphi(phi=phi)
         match self.native_geometry:
-            case Geometry.CARTESIAN:
-                raise NotImplementedError(
-                    f"geometry flag '{self.native_geometry}' not implemented yet for azimuthal_at_phi"
-                )
             case Geometry.POLAR:
                 phimed = self.coordinates.get_axis_array(Axis.AZIMUTH)
                 ret_coords = self.coordinates.project_along(
@@ -1017,10 +966,6 @@ class GasField(Generic[F]):
 
         iphi = self.find_iphi(phi=0)
         match self.native_geometry:
-            case Geometry.CARTESIAN:
-                raise NotImplementedError(
-                    f"geometry flag '{self.native_geometry}' not implemented yet for azimuthal_average"
-                )
             case Geometry.POLAR:
                 phimed = self.coordinates.get_axis_array_med(Axis.AZIMUTH)
                 ret_coords = self.coordinates.project_along(
@@ -1070,10 +1015,6 @@ class GasField(Generic[F]):
         iphip_m = self.find_iphi(phi=phip - 2 * rhill / rp)
         iphip_p = self.find_iphi(phi=phip + 2 * rhill / rp)
         match self.native_geometry:
-            case Geometry.CARTESIAN:
-                raise NotImplementedError(
-                    f"geometry flag '{self.native_geometry}' not implemented yet for azimuthal_average_except_planet_hill"
-                )
             case Geometry.POLAR:
                 ret_coords = self.coordinates
                 ret_data = self.data.copy()
@@ -1119,10 +1060,6 @@ class GasField(Generic[F]):
 
         ir1 = self.find_ir(distance=distance)
         match self.native_geometry:
-            case Geometry.CARTESIAN:
-                raise NotImplementedError(
-                    f"geometry flag '{self.native_geometry}' not implemented yet for radial_at_r"
-                )
             case Geometry.POLAR:
                 rmed = self.coordinates.get_axis_array_med(Axis.CYLINDRICAL_RADIUS)
                 ret_coords = self.coordinates.project_along(
@@ -1165,10 +1102,6 @@ class GasField(Generic[F]):
         irmax = self.find_ir(distance=vmax)
         ir = self.find_ir(distance=(vmax - vmin) / 2)
         match self.native_geometry:
-            case Geometry.CARTESIAN:
-                raise NotImplementedError(
-                    f"geometry flag '{self.native_geometry}' not implemented yet for radial_at_r"
-                )
             case Geometry.POLAR:
                 R = self.coordinates.get_axis_array(Axis.CYLINDRICAL_RADIUS)
                 if vmin is None:

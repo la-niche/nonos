@@ -75,11 +75,7 @@ def test_module_constants():
 
 @pytest.mark.parametrize(
     "geometry",
-    [
-        Geometry.CARTESIAN,
-        Geometry.POLAR,
-        Geometry.SPHERICAL,
-    ],
+    [Geometry.POLAR, Geometry.SPHERICAL],
 )
 def test_deprecated_coordinates_array_accesses(geometry):
     axes = axes_from_geometry(geometry)
