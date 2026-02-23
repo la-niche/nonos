@@ -142,6 +142,8 @@ def process_field(
     if "rr" in operations:
         dsop = dsop.radial_at_r(distance=distance)
 
+    dsop = dsop.azimuthal_rotation(rotate_with=planet_file)
+
     logger.debug("operations performed: {}", operations)
 
     dim = dsop.effective_ndim
@@ -199,7 +201,7 @@ def process_field(
         if "cmap" in plot_kwargs:
             plot_kwargs.pop("cmap")
 
-        plotable = dsop.map(plane[0], rotate_with=planet_file)
+        plotable = dsop.map(plane[0])
         plotable.plot(fig, ax, **plot_kwargs)
         avalue = plotable.abscissa.data
         # mypy doesn't narrow int to Literal[1] (it should)
@@ -211,10 +213,8 @@ def process_field(
         )
         ax.set_xlim(extent_parsed[0], extent_parsed[1])
     elif dim == 2:
-        dsop.map(plane[0], plane[1], rotate_with=planet_file).plot(
-            fig, ax, **plot_kwargs
-        )
-        plotable = dsop.map(plane[0], plane[1], rotate_with=planet_file)
+        dsop.map(plane[0], plane[1]).plot(fig, ax, **plot_kwargs)
+        plotable = dsop.map(plane[0], plane[1])
         avalue = plotable.abscissa.data
         ovalue = plotable.ordinate.data
         # mypy doesn't narrow int to Literal[2] (it should)

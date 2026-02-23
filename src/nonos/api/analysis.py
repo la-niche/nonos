@@ -48,7 +48,6 @@ from nonos._types import (
     PlanetData,
 )
 from nonos.api._angle_parsing import (
-    _fequal,
     _resolve_planet_file,
     _resolve_rotate_by,
 )
@@ -246,7 +245,6 @@ class FieldAttrs(Generic[F], TypedDict, total=False):
     snapshot_uid: int
     loader: Loader[F]
     operation: str
-    rotate_by: float
 
 
 @final
@@ -259,7 +257,6 @@ class Field(Generic[F]):
     snapshot_uid: int
     loader: Loader[F]
     operation: str = ""
-    rotate_by: float = 0.0
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "data", self.data.view())
@@ -469,52 +466,47 @@ class Field(Generic[F]):
         a,
         b=None,
         /,
-        rotate_by=None,
-        rotate_with=None,
+        rotate_by=None,  # deprecated
+        rotate_with=None,  # deprecated
     ):
-        rotate_by = _resolve_rotate_by(
-            rotate_by=rotate_by,
-            rotate_with=rotate_with,
-            planet_azimuth_finder=partial(
-                _find_planet_azimuth,
-                loader=self.loader,
-                snapshot_uid=self.snapshot_uid,
-            ),
-        )
-
         data_key = self.name
         if self.effective_ndim > 2:
             raise ValueError("data has to be 1D or 2D in order to call map.")
 
         axis_1 = Axis.from_label(a)
+        if rotate_by is not None:
+            warnings.warn(
+                "the rotate_by argument is deprecated. since v0.20.0 "
+                "and might be removed in a future version. "
+                "Use Field.azimuthal_rotation instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        if rotate_with is not None:
+            warnings.warn(
+                "the rotate_with argument is deprecated since v0.20.0 "
+                "and might be removed in a future version. "
+                "Use Field.azimuthal_rotation instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
         if b is None:
             meshgrid_conversion = self.coordinates._meshgrid_conversion_1d(axis_1)
 
             abscissa_value = list(meshgrid_conversion.values())[0]
             abscissa_key = list(meshgrid_conversion.keys())[0]
-            if axis_1 is Axis.AZIMUTH and not _fequal(self.rotate_by, rotate_by):
-                phicoord = self.coordinates.get_axis_array(Axis.AZIMUTH) - rotate_by
-                bv = bracketing_values(phicoord, 0)
-                if abs(closest_value(phicoord, 0)) > bv.span:
-                    ipi = closest_index(phicoord, 2 * np.pi)
-                else:
-                    ipi = closest_index(phicoord, 0)
-                match self.native_geometry:
-                    case Geometry.POLAR:
-                        data_view = np.roll(self.data, -ipi + 1, axis=1)
-                    case Geometry.SPHERICAL:
-                        data_view = np.roll(self.data, -ipi + 1, axis=2)
-                    case _:
-                        raise NotImplementedError(
-                            f"geometry flag '{self.native_geometry}' not implemented yet if corotation"
-                        )
+            if axis_1 is Axis.AZIMUTH:
+                data = self.azimuthal_rotation(
+                    rotate_by=rotate_by,
+                    rotate_with=rotate_with,
+                ).data
             else:
-                data_view = self.data.view()
+                data = self.data.view()
 
             return Plotable(
                 abscissa=(abscissa_key.label, abscissa_value),
-                ordinate=(data_key, data_view.squeeze()),
+                ordinate=(data_key, data.squeeze()),
             )
 
         else:
@@ -531,26 +523,13 @@ class Field(Generic[F]):
             )
             abscissa_key, ordinate_key = (axis_1, axis_2)
             native_plane_axes = self.coordinates.native_from_wanted(axis_1, axis_2)
-            if Axis.AZIMUTH in native_plane_axes and not _fequal(
-                self.rotate_by, rotate_by
-            ):
-                phicoord = self.coordinates.get_axis_array(Axis.AZIMUTH) - rotate_by
-                bv = bracketing_values(phicoord, 0)
-                if abs(closest_value(phicoord, 0)) > bv.span:
-                    ipi = closest_index(phicoord, 2 * np.pi)
-                else:
-                    ipi = closest_index(phicoord, 0)
-                match self.native_geometry:
-                    case Geometry.POLAR:
-                        data_view = np.roll(self.data, -ipi + 1, axis=1)
-                    case Geometry.SPHERICAL:
-                        data_view = np.roll(self.data, -ipi + 1, axis=2)
-                    case _:
-                        raise NotImplementedError(
-                            f"geometry flag '{self.native_geometry}' not implemented yet if corotation"
-                        )
+            if Axis.AZIMUTH in native_plane_axes:
+                data = self.azimuthal_rotation(
+                    rotate_by=rotate_by,
+                    rotate_with=rotate_with,
+                ).data
             else:
-                data_view = self.data.view()
+                data = self.data.view()
 
             def rotate_axes(arr: FArray[D, F], shift: int) -> FArray[D, F]:
                 axes_in = tuple(range(arr.ndim))
@@ -560,7 +539,7 @@ class Field(Generic[F]):
 
             # make reduction axis the first axis then drop (squeeze) it,
             # while preserving the original (cyclic) order in the other two axes
-            data_view = rotate_axes(data_view, shift=self.shape.index(1)).squeeze()
+            data = rotate_axes(data, shift=self.shape.index(1)).squeeze()
 
             naxes = axes_from_geometry(self.native_geometry)
             sorted_pairs = [
@@ -569,12 +548,12 @@ class Field(Generic[F]):
                 (naxes[2], naxes[0]),
             ]
             if native_plane_axes in sorted_pairs:
-                data_view = data_view.T
+                data = data.T
 
             return Plotable(
                 abscissa=(abscissa_key.label, abscissa_value),
                 ordinate=(ordinate_key.label, ordinate_value),
-                field=(data_key, data_view),
+                field=(data_key, data),
             )
 
     def save(
@@ -1300,12 +1279,21 @@ class Field(Generic[F]):
         ret_data = (self.data - ds_2[self.name].data) / ds_2[self.name].data
         return self.replace(data=ret_data.astype(self.dtype, copy=False))
 
-    def rotate(
+    def azimuthal_rotation(
         self,
         *,
-        rotate_with: str | None = None,
         rotate_by: float | None = None,
+        rotate_with: str | None = None,
+        direction: Literal[
+            "clockwise",
+            "anti-clockwise",
+            "trigonometric",
+            "anti-trigonometric",
+        ] = "clockwise",
     ) -> "Field[F]":
+        """
+        .. versionadded: 0.20.0
+        """
         rotate_by = _resolve_rotate_by(
             rotate_by=rotate_by,
             rotate_with=rotate_with,
@@ -1315,31 +1303,30 @@ class Field(Generic[F]):
                 snapshot_uid=self.snapshot_uid,
             ),
         )
+        match self.coordinates.geometry:
+            case Geometry.POLAR:
+                axis = 1
+            case Geometry.SPHERICAL:
+                axis = 2
+            case Geometry.CARTESIAN:
+                raise NotImplementedError
+            case _ as unreachable:
+                assert_never(unreachable)
 
-        operation = self.operation
-        if self.shape.count(1) > 1:
-            raise ValueError("data has to be 2D or 3D in order to rotate the data.")
-        if not _fequal(self.rotate_by, rotate_by):
-            phicoord = self.coordinates.get_axis_array(Axis.AZIMUTH) - rotate_by
-            if abs(closest_value(phicoord, 0)) > bracketing_values(phicoord, 0).span:
-                ipi = closest_index(phicoord, 2 * np.pi)
-            else:
-                ipi = closest_index(phicoord, 0)
-            match self.native_geometry:
-                case Geometry.POLAR:
-                    ret_data = np.roll(self.data, -ipi + 1, axis=1)
-                case Geometry.SPHERICAL:
-                    ret_data = np.roll(self.data, -ipi + 1, axis=2)
-                case _:
-                    raise NotImplementedError(
-                        f"geometry flag '{self.native_geometry}' not implemented yet if corotation"
-                    )
-        else:
-            ret_data = self.data
+        match direction:
+            case "clockwise" | "anti-trigonometric":
+                pass
+            case "tigronometric" | "anti-clockwise":
+                rotate_by *= -1
+            case _:
+                raise ValueError(f"Unexpected value {direction=!r}")
 
+        az = self.coordinates.get_axis_array(Axis.AZIMUTH) - rotate_by
+        bv = bracketing_values(az, 0)
+        v = 2 * np.pi if abs(closest_value(az, 0)) > bv.span else 0.0
         return self.replace(
-            data=ret_data.astype(self.dtype, copy=False),
-            operation=operation,
+            data=np.roll(self.data, 1 - closest_index(az, v), axis=axis),
+            operation="_".join([self.operation, f"az-shifted-{rotate_by}"]),
         )
 
 
@@ -1371,7 +1358,7 @@ class GasField:
             parameter_file=inifile,
             directory=Path.cwd() if directory is None else Path(directory),
         )
-        return Field(
+        field = Field(
             name=field,
             data=data,
             coordinates=coords,
@@ -1379,16 +1366,14 @@ class GasField:
             snapshot_uid=on,
             operation=operation,
             loader=loader,
-            rotate_by=_resolve_rotate_by(
+        )
+        if rotate_by or rotate_with:
+            return field.azimuthal_rotation(
                 rotate_by=rotate_by,
                 rotate_with=rotate_with,
-                planet_azimuth_finder=partial(
-                    _find_planet_azimuth,
-                    loader=loader,
-                    snapshot_uid=on,
-                ),
-            ),
-        )
+            )
+        else:
+            return field
 
 
 class GasDataSet(Generic[D, F]):

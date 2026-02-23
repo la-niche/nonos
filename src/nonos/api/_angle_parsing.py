@@ -1,5 +1,4 @@
 import sys
-from math import isclose
 from typing import Protocol
 
 if sys.version_info >= (3, 13):
@@ -68,8 +67,3 @@ def _resolve_rotate_by(
         raise AssertionError
 
     return rotate_by
-
-
-def _fequal(a: float, b: float, /) -> bool:
-    # a fuzzy single-precision floating point comparison
-    return isclose(a, b, abs_tol=1e-7, rel_tol=1e-6)

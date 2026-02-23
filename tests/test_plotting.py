@@ -16,8 +16,12 @@ def test_plot_planet_corotation(test_data_dir):
     az = field.map("phi").data
     assert az.argmax() != 0
 
-    az_corr = field.map("phi", rotate_with="planet0.dat").data
+    with pytest.deprecated_call():
+        az_corr = field.map("phi", rotate_with="planet0.dat").data
     assert az_corr.argmax() == 0
+
+    az_corr2 = field.azimuthal_rotation(rotate_with="planet0.dat").map("phi").data
+    npt.assert_array_equal(az_corr2, az_corr)
 
 
 def test_unit_conversion(test_data_dir):
@@ -93,9 +97,9 @@ def test_corotation_api_float(test_data_dir):
     os.chdir(test_data_dir / "idefix_newvtk_planet2d")
 
     ds = GasDataSet(23)
-    case1 = ds["RHO"].map("x", "y", rotate_with="planet0.dat")
+    case1 = ds["RHO"].azimuthal_rotation(rotate_with="planet0.dat").map("x", "y")
     ds = GasDataSet(23)
-    case2 = ds["RHO"].map("x", "y", rotate_by=1.89628895460529)
+    case2 = ds["RHO"].azimuthal_rotation(rotate_by=1.89628895460529).map("x", "y")
 
     npt.assert_array_equal(case1.data, case2.data)
 

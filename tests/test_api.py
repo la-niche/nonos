@@ -224,6 +224,12 @@ def test_field_map_no_mutation(test_data_dir):
     ds = GasDataSet(500, directory=test_data_dir / "idefix_spherical_planet3d")
     f = ds["RHO"].radial_at_r(1.0).vertical_at_midplane()
     d0 = f.data.copy()
-    f.map("phi", rotate_by=1.0)
+    with pytest.deprecated_call():
+        f.map("phi", rotate_by=1.0)
     d1 = f.data.copy()
     npt.assert_array_equal(d1, d0)
+
+    # now with non-deprecated API
+    f.azimuthal_rotation(rotate_by=1.0).map("phi")
+    d2 = f.data.copy()
+    npt.assert_array_equal(d2, d0)
