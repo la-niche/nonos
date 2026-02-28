@@ -29,6 +29,7 @@ from matplotlib.ticker import SymmetricalLogLocator
 from numpy import float32 as f32, float64 as f64
 
 from nonos._geometry import (
+    AutoIndex,
     Axis,
     Coordinates,
     Geometry,
@@ -440,6 +441,8 @@ class Field(Generic[F]):
             coordinates=self.coordinates.astype(dtype),
         )
 
+    # low level arithmetic
+
     # despite my best effort, type checkers (mypy and ty) do not
     # seem able to infer that these decorated methods are in fact
     # type-safe: their real bodies live in the decorator's implementation
@@ -459,6 +462,30 @@ class Field(Generic[F]):
     def __truediv__(self, other: Any) -> "Field[F]": ...  # type: ignore
     @_arithmetic_field_operator(op.truediv, "<truediv-result>", reverse_operands=True)
     def __rtruediv__(self, other: Any) -> "Field[F]": ...  # type: ignore
+
+    # medium level methods:
+    # - an axis must always be specified
+    # - any axis from the field's geometry is considered valid, all others are invalid
+    # - indices (deltas) must be provided as exact integer values
+    # - output names should reflect the operation conducted (e.g. <slice-result>)
+
+    # reductions: methods that reduce effective_ndim
+    # these should all be idempotents
+    def slice_at_index(
+        self,
+        axis: Axis,
+        idx: int | AutoIndex = AutoIndex.MIDPOINT,
+        /,
+    ) -> "Field[F]": ...
+    def project_to_index(
+        self,
+        axis: Axis,
+        idx: int | AutoIndex = AutoIndex.MIDPOINT,
+        /,
+    ) -> "Field[F]":
+        # worth noting I considered the idea of having a weight argument here,
+        # but then it would only correspond to a mul op, which we already support
+        ...
 
 
 class GasFieldReplaceKwargs(Generic[F], TypedDict, total=False):
