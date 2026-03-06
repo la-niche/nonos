@@ -7,7 +7,14 @@ import numpy.testing as npt
 import pytest
 from pytest import RaisesExc, RaisesGroup
 
-from nonos._geometry import AutoIndex, Axis, Coordinates, Geometry
+from nonos._geometry import (
+    SELECT_ALL,
+    AutoIndex,
+    Axis,
+    Coordinates,
+    Geometry,
+    IndexRange,
+)
 from nonos.api import GasDataSet, file_analysis
 from nonos.api.analysis import Field
 
@@ -183,6 +190,34 @@ def test_field_slice(stub_field, axis, idx, keep_name):
         assert s.name == "<slice-result>"
 
     assert s.slice_at_index(axis, AutoIndex.MIDPOINT, keep_name=True) == s
+
+
+@pytest.mark.parametrize(
+    "selection, expected_ndim",
+    [
+        (
+            {
+                Axis.CARTESIAN_X: SELECT_ALL,
+                Axis.CARTESIAN_Y: SELECT_ALL,
+                Axis.CARTESIAN_Z: SELECT_ALL,
+            },
+            3,
+        ),
+        # TODO: re-implement slicing as an application of this
+        ({Axis.CARTESIAN_Y: IndexRange(0, 1)}, 2),
+    ],
+)
+@pytest.mark.parametrize("keep_name", [True, False])
+def test_field_select_subdomain(stub_field, selection, expected_ndim, keep_name):
+    f = stub_field
+    assert f.effective_ndim == 3
+
+    s = f.select_subdomain(selection, keep_name=keep_name)
+    assert s.effective_ndim == expected_ndim
+    if keep_name:
+        assert s.name == f.name
+    else:
+        assert s.name == "<select-result>"
 
 
 class TestFileAnalysis:

@@ -29,10 +29,12 @@ from matplotlib.ticker import SymmetricalLogLocator
 from numpy import float32 as f32, float64 as f64
 
 from nonos._geometry import (
+    SELECT_ALL,
     AutoIndex,
     Axis,
     Coordinates,
     Geometry,
+    IndexRange,
     axes_from_geometry,
 )
 from nonos._integrity_checks import (
@@ -508,6 +510,32 @@ class Field(Generic[F]):
             name=self.name if keep_name else "<slice-result>",
             data=self.data[tuple(sel)].reshape(new_shape),  # type: ignore[arg-type]
             coordinates=self.coordinates.slice_at_index(axis, idx),
+        )
+
+    def select_subdomain(
+        self,
+        selection: dict[Axis, IndexRange],
+        /,
+        *,
+        keep_name: bool = False,
+    ) -> "Field[F]":
+        if len(selection) > 3:
+            raise TypeError
+
+        selection = (
+            dict.fromkeys(axes_from_geometry(self.geometry), SELECT_ALL) | selection
+        )
+        ranges = cast(
+            tuple[IndexRange, IndexRange, IndexRange], tuple(selection.values())
+        )
+        sel = cast(tuple[slice, slice, slice], tuple(ir.as_slice() for ir in ranges))
+
+        return Field(
+            name=self.name if keep_name else "<select-result>",
+            data=self.data[sel],
+            coordinates=self.coordinates.select_logical_slab(
+                x1=ranges[0], x2=ranges[1], x3=ranges[2]
+            ),
         )
 
 
