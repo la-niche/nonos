@@ -13,6 +13,9 @@ on:
   workflow_dispatch:
 
 permissions: {}
+env:
+  # avoid compile-time SyntaxWarnings from dependencies (if any)
+  UV_COMPILE_BYTECODE: '1'
 
 jobs:
   tests:
@@ -28,23 +31,41 @@ jobs:
         - '3.13'
         - '3.14'
         label: ['']
+        package: [--all-packages]
         include:
         - os: ubuntu-22.04
           python-version: '3.10'
-          label: (oldest-deps-minimal)
+          label: oldest-deps-minimal_workspace
+          package: --all-packages
           install-args: --resolution=lowest
         - os: ubuntu-22.04
           python-version: '3.10'
-          label: (oldest-deps-full)
-          install-args: --resolution=lowest --all-extras --compile-bytecode
+          label: oldest-deps-full_workspace
+          package: --all-packages
+          install-args: --resolution=lowest --all-extras
+        - os: ubuntu-22.04
+          python-version: '3.10'
+          label: nonos[all]_oldest-deps-full-no_workspace
+          package: --package nonos
+          install-args: --resolution=lowest --all-extras
+          test-dir: tests
+        - os: ubuntu-22.04
+          python-version: '3.10'
+          label: nonos-cli_oldest-deps-full_no-workspace
+          package: --package nonos-cli
+          install-args: --resolution=lowest --all-extras
+          test-dir: cli/tests
         - os: ubuntu-latest
           python-version: '3.14'
+          package: --all-packages
           install-args: --all-extras
-          label: (full)
+          label: full
         - os: macos-latest
           python-version: '3.14'
+          package: --all-packages
         - os: windows-latest
           python-version: '3.14'
+          package: --all-packages
 
     name: ${{ matrix.os }}-py${{ matrix.python-version }} ${{ matrix.label }}
     runs-on: ${{ matrix.os }}
@@ -61,11 +82,11 @@ jobs:
         cache-suffix: ${{ matrix.label }}
 
     - name: Build
-      run: uv sync --all-packages --group covcheck ${{ matrix.install-args }}
+      run: uv sync ${{ matrix.package }} --group covcheck ${{ matrix.install-args }}
 
     - name: Run pytest
       shell: bash
-      run: uv run --no-sync coverage run --parallel-mode -m pytest --color=yes
+      run: uv run --no-sync coverage run --parallel-mode -m pytest --color=yes ${{ matrix.test-dir }}
 
     - name: Upload coverage data
       # only using reports from ubuntu because

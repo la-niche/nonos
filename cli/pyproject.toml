@@ -45,5 +45,15 @@ all = [
     "nonos[all]",
 ]
 
+[dependency-groups]
+test = [
+    "pytest>=9.0.0",
+]
+covcheck = [
+    {include-group = "test"},
+    "coverage[toml]; python_full_version < '3.11'",
+    "coverage>=7.6.12",
+]
+
 [tool.uv.sources]
 nonos = { workspace = true }
