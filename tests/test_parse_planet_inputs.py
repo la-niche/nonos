@@ -40,7 +40,7 @@ class TestParseRotationAngle:
         "planet_azimuth_finder": mock_planet_azimuth_finder,
     }
 
-    @pytest.mark.parametrize("kwargs", combinations(example_inputs.items(), 2))
+    @pytest.mark.parametrize("kwargs", list(combinations(example_inputs.items(), 2)))
     def test_two_inputs(self, kwargs):
         conf = {**self.default_kwargs, **dict(kwargs)}
         with pytest.raises(

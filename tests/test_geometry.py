@@ -110,8 +110,14 @@ def test_coordinates_mismatch_dtypes(dt, ctx):
 
 @pytest.mark.parametrize(
     "x1, x2, x3",
-    permutations(
-        [np.linspace(0, 8, 8), np.linspace(0, 8, 8), np.linspace(0, 8, 8).reshape(4, 2)]
+    list(
+        permutations(
+            [
+                np.linspace(0, 8, 8),
+                np.linspace(0, 8, 8),
+                np.linspace(0, 8, 8).reshape(4, 2),
+            ]
+        )
     ),
 )
 def test_coordinates_invalid_ndim(x1, x2, x3):
