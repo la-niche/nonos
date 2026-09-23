@@ -101,6 +101,9 @@ class Fargo3DReader:
                 elif FRAME_unwrapped == "C":
                     self.FRAME = FrameType.PLANET_COROTATION
                     self.OMEGAFRAME = float("nan")
+                elif FRAME_unwrapped == "G":
+                    self.FRAME = FrameType.PLANET_GUIDINGCENTER
+                    self.OMEGAFRAME = float("nan")
                 else:
                     raise NotImplementedError
 
