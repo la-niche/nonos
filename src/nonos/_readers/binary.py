@@ -542,7 +542,13 @@ class Fargo3DReader:
                 x2=domain_x,  # Y-Edge
                 x3=domain_z,  # Z-Edge #latitude
             )
-            pairs = [("RHO", "dens"), ("VX1", "vy"), ("VX2", "vx"), ("VX3", "vz")]
+            pairs = [
+                ("RHO", "dens"),
+                ("VX1", "vy"),
+                ("VX2", "vx"),
+                ("VX3", "vz"),
+                ("ENG", "energy"),
+            ]
         elif geometry_str == "spherical":
             V = replace(
                 V,
@@ -550,7 +556,13 @@ class Fargo3DReader:
                 x2=domain_z,  # Z-Edge #latitude
                 x3=domain_x,  # Y-Edge
             )
-            pairs = [("RHO", "dens"), ("VX1", "vy"), ("VX2", "vz"), ("VX3", "vx")]
+            pairs = [
+                ("RHO", "dens"),
+                ("VX1", "vy"),
+                ("VX2", "vz"),
+                ("VX3", "vx"),
+                ("ENG", "energy"),
+            ]
         else:
             raise NotImplementedError(f"Geometry {geometry_str!r} is not supported")
 
