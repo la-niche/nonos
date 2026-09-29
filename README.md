@@ -14,7 +14,7 @@ For more, read [the documentation !](https://nonos.readthedocs.io/en/latest/?bad
 `nonos` supports the following data formats
 - Pluto and Idefix: `data.*.vtk`
 - Fargo-adsg: `gasdens.dat`, `gasvy*.dat`, `gasvx*.dat`
-- Fargo3D: same as Fargo-adsg + `gasvz*.dat`
+- Fargo3D: same as Fargo-adsg + `gasvz*.dat`, `gasenergy*.dat`
 
 ## Development status
 

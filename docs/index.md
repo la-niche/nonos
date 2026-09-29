@@ -8,7 +8,7 @@ We list here the accepted formats for the data:
 
 * Pluto and Idefix: `data.*.vtk`
 * Fargo-adsg: `gasdens*.dat`, `gasvy*.dat`, `gasvx*.dat`
-* Fargo3D: same as Fargo-adsg + `gasvz*.dat`
+* Fargo3D: same as Fargo-adsg + `gasvz*.dat`, `gasenergy*.dat`
 
 !!! info "Parameter file"
 
