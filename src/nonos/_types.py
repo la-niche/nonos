@@ -161,10 +161,10 @@ class PlanetData(Generic[F]):
                     f"PlanetData.set_orbital_elements isn't implemented for {frame=}"
                 )
             case FrameType.PLANET_COROTATION:
-                # bug-for-bug compat
+                # https://github.com/la-niche/nonos/issues/287
                 return self.get_orbital_elements(FrameType.FIXED_FRAME)
             case FrameType.PLANET_GUIDINGCENTER:
-                # bug-for-bug compat
+                # https://github.com/la-niche/nonos/issues/287
                 return self.get_orbital_elements(FrameType.FIXED_FRAME)
             case _ as unreachable:
                 assert_never(unreachable)
