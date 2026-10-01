@@ -503,6 +503,16 @@ class Field(Generic[F]):
             coordinates=self.coordinates.slice_at_index(axis, idx),
         )
 
+    def project_to_index(
+        self,
+        axis: Axis,
+        idx: int | AutoIndex,
+        /,
+    ) -> "Field[F]":
+        # worth noting I considered the idea of having a weight argument here,
+        # but then it would only correspond to a mul op, which we already support
+        ...
+
 
 class GasFieldReplaceKwargs(TypedDict, Generic[F], total=False):
     _field: Field[F]
