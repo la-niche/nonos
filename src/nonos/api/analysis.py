@@ -229,7 +229,7 @@ def _find_planet_azimuth(
     data_dir = loader.parameter_file.parent
     pd = loader.load_planet_data(data_dir / planet_file)
     ind_on = _get_ind_snapshot_uid(loader, snapshot_uid, pd.t)
-    return float(np.arctan2(pd.y, pd.x)[ind_on] % (2 * np.pi))
+    return float(np.arctan2(pd.y, pd.x)[ind_on])
 
 
 FieldOp: TypeAlias = Callable[["Field[F]", Any], "Field[F]"]
