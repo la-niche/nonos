@@ -757,15 +757,6 @@ class GasField(Generic[F]):
         rotate_by=None,
         rotate_with=None,
     ):
-        rotate_by = _resolve_rotate_by(
-            rotate_by=rotate_by,
-            rotate_with=rotate_with,
-            planet_azimuth_finder=partial(
-                _find_planet_azimuth,
-                loader=self._loader,
-                snapshot_uid=self.snapshot_uid,
-            ),
-        )
 
         data_key = self.name
         if self.effective_ndim > 2:
@@ -778,22 +769,11 @@ class GasField(Generic[F]):
 
             abscissa_val1D = next(iter(mesh1D.values()))
             abscissa_key = next(iter(mesh1D.keys()))
-            if axis_1 is Axis.AZIMUTH and not _fequal(self._rotate_by, rotate_by):
-                phicoord = self.coordinates.get_axis_array(Axis.AZIMUTH) - rotate_by
-                bv = bracketing_values(phicoord, 0)
-                if abs(closest_value(phicoord, 0)) > bv.span:
-                    ipi = closest_index(phicoord, 2 * np.pi)
-                else:
-                    ipi = closest_index(phicoord, 0)
-                match self.geometry:
-                    case Geometry.POLAR:
-                        data_view = np.roll(self.data, -ipi + 1, axis=1)
-                    case Geometry.SPHERICAL:
-                        data_view = np.roll(self.data, -ipi + 1, axis=2)
-                    case _:
-                        raise NotImplementedError(
-                            f"geometry flag '{self.geometry}' not implemented yet if corotation"
-                        )
+            if axis_1 is Axis.AZIMUTH:
+                data_view = self._rotate(
+                    rotate_with=rotate_with, rotate_by=rotate_by
+                ).view()
+
             else:
                 data_view = self.data.view()
 
@@ -811,24 +791,11 @@ class GasField(Generic[F]):
             abscissa_val2D, ordinate_value = (mesh2D[axis_1], mesh2D[axis_2])
             abscissa_key, ordinate_key = (axis_1, axis_2)
             native_plane_axes = self.coordinates.native_from_wanted(axis_1, axis_2)
-            if Axis.AZIMUTH in native_plane_axes and not _fequal(
-                self._rotate_by, rotate_by
-            ):
-                phicoord = self.coordinates.get_axis_array(Axis.AZIMUTH) - rotate_by
-                bv = bracketing_values(phicoord, 0)
-                if abs(closest_value(phicoord, 0)) > bv.span:
-                    ipi = closest_index(phicoord, 2 * np.pi)
-                else:
-                    ipi = closest_index(phicoord, 0)
-                match self.geometry:
-                    case Geometry.POLAR:
-                        data_view = np.roll(self.data, -ipi + 1, axis=1)
-                    case Geometry.SPHERICAL:
-                        data_view = np.roll(self.data, -ipi + 1, axis=2)
-                    case _:
-                        raise NotImplementedError(
-                            f"geometry flag '{self.geometry}' not implemented yet if corotation"
-                        )
+            if Axis.AZIMUTH in native_plane_axes:
+                data_view = self._rotate(
+                    rotate_with=rotate_with, rotate_by=rotate_by
+                ).view()
+
             else:
                 data_view = self.data.view()
 
@@ -1489,7 +1456,7 @@ class GasField(Generic[F]):
         ret_data = ((self._field - gf._field) / gf._field).data
         return self.replace(data=ret_data.astype(self.dtype, copy=False))
 
-    def rotate(
+    def _rotate(
         self,
         *,
         rotate_with: str | None = None,
@@ -1523,6 +1490,15 @@ class GasField(Generic[F]):
                     )
         else:
             ret_data = self.data
+        return ret_data
+
+    def rotate(
+        self,
+        *,
+        rotate_with: str | None = None,
+        rotate_by: float | None = None,
+    ) -> "GasField[F]":
+        ret_data = self._rotate(rotate_with=rotate_with, rotate_by=rotate_by)
 
         return self.replace(data=ret_data.astype(self.dtype, copy=False))
 
