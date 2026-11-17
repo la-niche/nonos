@@ -56,7 +56,7 @@ from nonos.api._angle_parsing import (
     _resolve_planet_file,
     _resolve_rotate_by,
 )
-from nonos.api.tools import bracketing_values, closest_index, closest_value
+from nonos.api.tools import bracketing_values, closest_index
 from nonos.geometry import Axis, Geometry
 from nonos.loaders import BUILTIN_RECIPES, Loader
 
@@ -229,7 +229,7 @@ def _find_planet_azimuth(
     data_dir = loader.parameter_file.parent
     pd = loader.load_planet_data(data_dir / planet_file)
     ind_on = _get_ind_snapshot_uid(loader, snapshot_uid, pd.t)
-    return float(np.arctan2(pd.y, pd.x)[ind_on] % (2 * np.pi))
+    return float(np.arctan2(pd.y, pd.x)[ind_on])
 
 
 FieldOp: TypeAlias = Callable[["Field[F]", Any], "Field[F]"]
@@ -757,15 +757,6 @@ class GasField(Generic[F]):
         rotate_by=None,
         rotate_with=None,
     ):
-        rotate_by = _resolve_rotate_by(
-            rotate_by=rotate_by,
-            rotate_with=rotate_with,
-            planet_azimuth_finder=partial(
-                _find_planet_azimuth,
-                loader=self._loader,
-                snapshot_uid=self.snapshot_uid,
-            ),
-        )
 
         data_key = self.name
         if self.effective_ndim > 2:
@@ -778,22 +769,11 @@ class GasField(Generic[F]):
 
             abscissa_val1D = next(iter(mesh1D.values()))
             abscissa_key = next(iter(mesh1D.keys()))
-            if axis_1 is Axis.AZIMUTH and not _fequal(self._rotate_by, rotate_by):
-                phicoord = self.coordinates.get_axis_array(Axis.AZIMUTH) - rotate_by
-                bv = bracketing_values(phicoord, 0)
-                if abs(closest_value(phicoord, 0)) > bv.span:
-                    ipi = closest_index(phicoord, 2 * np.pi)
-                else:
-                    ipi = closest_index(phicoord, 0)
-                match self.geometry:
-                    case Geometry.POLAR:
-                        data_view = np.roll(self.data, -ipi + 1, axis=1)
-                    case Geometry.SPHERICAL:
-                        data_view = np.roll(self.data, -ipi + 1, axis=2)
-                    case _:
-                        raise NotImplementedError(
-                            f"geometry flag '{self.geometry}' not implemented yet if corotation"
-                        )
+            if axis_1 is Axis.AZIMUTH:
+                data_view = self._rotate(
+                    rotate_with=rotate_with, rotate_by=rotate_by
+                ).view()
+
             else:
                 data_view = self.data.view()
 
@@ -811,24 +791,11 @@ class GasField(Generic[F]):
             abscissa_val2D, ordinate_value = (mesh2D[axis_1], mesh2D[axis_2])
             abscissa_key, ordinate_key = (axis_1, axis_2)
             native_plane_axes = self.coordinates.native_from_wanted(axis_1, axis_2)
-            if Axis.AZIMUTH in native_plane_axes and not _fequal(
-                self._rotate_by, rotate_by
-            ):
-                phicoord = self.coordinates.get_axis_array(Axis.AZIMUTH) - rotate_by
-                bv = bracketing_values(phicoord, 0)
-                if abs(closest_value(phicoord, 0)) > bv.span:
-                    ipi = closest_index(phicoord, 2 * np.pi)
-                else:
-                    ipi = closest_index(phicoord, 0)
-                match self.geometry:
-                    case Geometry.POLAR:
-                        data_view = np.roll(self.data, -ipi + 1, axis=1)
-                    case Geometry.SPHERICAL:
-                        data_view = np.roll(self.data, -ipi + 1, axis=2)
-                    case _:
-                        raise NotImplementedError(
-                            f"geometry flag '{self.geometry}' not implemented yet if corotation"
-                        )
+            if Axis.AZIMUTH in native_plane_axes:
+                data_view = self._rotate(
+                    rotate_with=rotate_with, rotate_by=rotate_by
+                ).view()
+
             else:
                 data_view = self.data.view()
 
@@ -1489,12 +1456,12 @@ class GasField(Generic[F]):
         ret_data = ((self._field - gf._field) / gf._field).data
         return self.replace(data=ret_data.astype(self.dtype, copy=False))
 
-    def rotate(
+    def _rotate(
         self,
         *,
         rotate_with: str | None = None,
         rotate_by: float | None = None,
-    ) -> "GasField[F]":
+    ) -> "FArray3D[F]":
         rotate_by = _resolve_rotate_by(
             rotate_by=rotate_by,
             rotate_with=rotate_with,
@@ -1507,22 +1474,32 @@ class GasField(Generic[F]):
         if self.effective_ndim < 2:
             raise ValueError("data has to be 2D or 3D in order to rotate the data.")
         if not _fequal(self._rotate_by, rotate_by):
-            phicoord = self.coordinates.get_axis_array(Axis.AZIMUTH) - rotate_by
-            if abs(closest_value(phicoord, 0)) > bracketing_values(phicoord, 0).span:
-                ipi = closest_index(phicoord, 2 * np.pi)
-            else:
-                ipi = closest_index(phicoord, 0)
+            phi = self.coordinates.get_axis_array(Axis.AZIMUTH)
+            phi_min = phi[0]  # assuming phi is strictly increasing
+            phicoord_wrapped = (
+                (phi - rotate_by - phi_min) % (2 * np.pi)
+            ) + phi_min  # in [phi_min, phi_min + 2*pi) i.e native convention
+            ipi = int(np.argmin(phicoord_wrapped))
             match self.geometry:
                 case Geometry.POLAR:
-                    ret_data = np.roll(self.data, -ipi + 1, axis=1)
+                    ret_data = np.roll(self.data, -ipi, axis=1)
                 case Geometry.SPHERICAL:
-                    ret_data = np.roll(self.data, -ipi + 1, axis=2)
+                    ret_data = np.roll(self.data, -ipi, axis=2)
                 case _:
                     raise NotImplementedError(
                         f"geometry flag '{self.geometry}' not implemented yet if corotation"
                     )
         else:
             ret_data = self.data
+        return ret_data
+
+    def rotate(
+        self,
+        *,
+        rotate_with: str | None = None,
+        rotate_by: float | None = None,
+    ) -> "GasField[F]":
+        ret_data = self._rotate(rotate_with=rotate_with, rotate_by=rotate_by)
 
         return self.replace(data=ret_data.astype(self.dtype, copy=False))
 
