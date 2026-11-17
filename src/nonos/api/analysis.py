@@ -56,7 +56,7 @@ from nonos.api._angle_parsing import (
     _resolve_planet_file,
     _resolve_rotate_by,
 )
-from nonos.api.tools import bracketing_values, closest_index, closest_value
+from nonos.api.tools import bracketing_values, closest_index
 from nonos.geometry import Axis, Geometry
 from nonos.loaders import BUILTIN_RECIPES, Loader
 
@@ -1461,7 +1461,7 @@ class GasField(Generic[F]):
         *,
         rotate_with: str | None = None,
         rotate_by: float | None = None,
-    ) -> "GasField[F]":
+    ) -> "FArray3D[F]":
         rotate_by = _resolve_rotate_by(
             rotate_by=rotate_by,
             rotate_with=rotate_with,
