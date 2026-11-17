@@ -1474,16 +1474,17 @@ class GasField(Generic[F]):
         if self.effective_ndim < 2:
             raise ValueError("data has to be 2D or 3D in order to rotate the data.")
         if not _fequal(self._rotate_by, rotate_by):
-            phicoord = self.coordinates.get_axis_array(Axis.AZIMUTH) - rotate_by
-            if abs(closest_value(phicoord, 0)) > bracketing_values(phicoord, 0).span:
-                ipi = closest_index(phicoord, 2 * np.pi)
-            else:
-                ipi = closest_index(phicoord, 0)
+            phi = self.coordinates.get_axis_array(Axis.AZIMUTH)
+            phi_min = phi[0]  # assuming phi is strictly increasing
+            phicoord_wrapped = (
+                (phi - rotate_by - phi_min) % (2 * np.pi)
+            ) + phi_min  # in [phi_min, phi_min + 2*pi) i.e native convention
+            ipi = int(np.argmin(phicoord_wrapped))
             match self.geometry:
                 case Geometry.POLAR:
-                    ret_data = np.roll(self.data, -ipi + 1, axis=1)
+                    ret_data = np.roll(self.data, -ipi, axis=1)
                 case Geometry.SPHERICAL:
-                    ret_data = np.roll(self.data, -ipi + 1, axis=2)
+                    ret_data = np.roll(self.data, -ipi, axis=2)
                 case _:
                     raise NotImplementedError(
                         f"geometry flag '{self.geometry}' not implemented yet if corotation"
